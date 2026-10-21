@@ -343,25 +343,53 @@ private fun HasniTechDashboard() {
 
 @Composable
 private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, silver: Color, dim: Color, blue: Color) {
-    Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+    var runtimeInstalled by remember { mutableStateOf(context.packageManager.getLaunchIntentForPackage("com.winlator") != null) }
+    var runtimeMessage by remember { mutableStateOf(if (runtimeInstalled) "تم العثور على Winlator على الجهاز." else "لم يتم العثور على محرك Winlator مثبت.") }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Rounded.Window, null, tint = cyan, modifier = Modifier.size(48.dp))
         Spacer(Modifier.height(10.dp))
         Text("WINDOWS RUNTIME", color = cyan, fontSize = 17.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-        Text("Wine  •  Box64  •  ARM64", color = silver, fontSize = 11.sp)
-        Spacer(Modifier.height(10.dp))
-        Text("محرك Windows لم يُدمج داخل HASNITECH بعد. في هذه المرحلة يمكنك فتح Winlator إذا كان مثبتًا، وهو محرك توافق خارجي لتشغيل بعض برامج Windows.", color = silver, fontSize = 10.sp, lineHeight = 16.sp)
+        Text("Wine • Box64 • ARM64", color = silver, fontSize = 11.sp)
+        Spacer(Modifier.height(12.dp))
+        Surface(color = if (runtimeInstalled) Color(0x3326D07C) else Color(0x33FFB547), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (runtimeInstalled) Color(0xFF26D07C) else Color(0xFFFFB547))) {
+            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(if (runtimeInstalled) Icons.Rounded.CheckCircle else Icons.Rounded.Info, null, tint = if (runtimeInstalled) Color(0xFF26D07C) else Color(0xFFFFB547))
+                Spacer(Modifier.width(9.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(if (runtimeInstalled) "المحرك موجود" else "المحرك غير مثبت", color = silver, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(runtimeMessage, color = dim, fontSize = 10.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("HASNITECH يجهّز الوصول إلى محرك Windows. تشغيل EXE يتطلب محرك توافق فعليًا؛ لا يمكن تشغيله مباشرة بواسطة Android.", color = silver, fontSize = 11.sp, lineHeight = 17.sp)
         Spacer(Modifier.height(14.dp))
         Button(onClick = {
-            val intent = context.packageManager.getLaunchIntentForPackage("com.winlator")
             try {
-                if (intent != null) context.startActivity(intent)
-                else context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/brunodev85/winlator/releases")))
-            } catch (_: Exception) { }
-        }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
-            Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("فتح Winlator / تنزيله", fontSize = 11.sp)
+                val launchIntent = context.packageManager.getLaunchIntentForPackage("com.winlator")
+                if (launchIntent != null) {
+                    context.startActivity(launchIntent)
+                    runtimeInstalled = true
+                    runtimeMessage = "جارٍ فتح محرك Winlator."
+                } else {
+                    runtimeInstalled = false
+                    runtimeMessage = "افتح صفحة الإصدار الرسمي وثبّت APK يدويًا، ثم ارجع إلى HASNITECH."
+                    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/brunodev85/winlator/releases")))
+                }
+            } catch (e: Exception) {
+                runtimeMessage = "تعذر فتح المحرك أو صفحة التنزيل. تحقق من اتصال الإنترنت."
+            }
+        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+            Icon(if (runtimeInstalled) Icons.Rounded.PlayArrow else Icons.Rounded.Download, null); Spacer(Modifier.width(6.dp)); Text(if (runtimeInstalled) "تشغيل محرك Windows" else "تنزيل محرك Windows", fontSize = 11.sp)
         }
-        Spacer(Modifier.height(6.dp))
-        Text("تشغيل Office غير مضمون؛ يعتمد على إصدار البرنامج والتوافق والترخيص.", color = dim, fontSize = 9.sp)
+        OutlinedButton(onClick = {
+            runtimeInstalled = context.packageManager.getLaunchIntentForPackage("com.winlator") != null
+            runtimeMessage = if (runtimeInstalled) "تم العثور على Winlator على الجهاز." else "لم يتم العثور على Winlator؛ ثبّته أولًا من صفحة الإصدار الرسمية."
+        }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(6.dp)); Text("إعادة فحص المحرك", fontSize = 11.sp)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("تنبيه: لا نعلن عن دمج Wine/Box64 داخل APK حتى يُدمج المصدر والمكتبات الأصلية ويُختبر البناء. التوافق مع برامج Office والألعاب غير مضمون.", color = dim, fontSize = 9.sp, lineHeight = 14.sp)
     }
 }
 
