@@ -217,7 +217,7 @@ private fun HasniTechDashboard() {
             }
             Row(Modifier.fillMaxSize().padding(10.dp), horizontalArrangement=Arrangement.spacedBy(9.dp)) {
                 // Fixed left navigation rail, matching the reference dashboard.
-                Column(Modifier.fillMaxWidth(.19f).fillMaxHeight().clip(RoundedCornerShape(16.dp))
+                Column(Modifier.fillMaxWidth(.22f).fillMaxHeight().clip(RoundedCornerShape(16.dp))
                     .background(panel).border(1.dp, cyan.copy(alpha=.45f), RoundedCornerShape(16.dp)).padding(8.dp),
                     verticalArrangement=Arrangement.spacedBy(5.dp)) {
                     Row(verticalAlignment=Alignment.CenterVertically, modifier=Modifier.padding(vertical=8.dp, horizontal=3.dp)) {
@@ -236,7 +236,7 @@ private fun HasniTechDashboard() {
                             Row(Modifier.fillMaxWidth().padding(horizontal=8.dp), verticalAlignment=Alignment.CenterVertically) {
                                 Icon(item.first,null,tint=if(page==item.third) cyan else Color(0xFF77A8E8), modifier=Modifier.size(19.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text(item.second,color=Silver,fontSize=10.sp,maxLines=1)
+                                Text(item.second,color=Silver,fontSize=11.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
                             }
                         }
                     }
@@ -250,7 +250,7 @@ private fun HasniTechDashboard() {
                     }
                 }
                 // Main holographic stage.
-                Column(Modifier.weight(1.35f).fillMaxHeight(), verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment=Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("HASNITECH  /  CONTROL CENTER", color=cyan, fontSize=11.sp, fontWeight=FontWeight.Bold, letterSpacing=1.2.sp)
@@ -287,7 +287,7 @@ private fun HasniTechDashboard() {
                     }
                 }
                 // Right-side device status and launchable shortcuts.
-                Column(Modifier.fillMaxWidth(.27f).fillMaxHeight(), verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.fillMaxWidth(.25f).fillMaxHeight(), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(panel).border(1.dp,cyan.copy(alpha=.4f),RoundedCornerShape(14.dp)).padding(11.dp)) {
                         Text("الجهاز والنظام",color=cyan,fontSize=12.sp,fontWeight=FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
