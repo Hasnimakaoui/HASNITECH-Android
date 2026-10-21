@@ -237,8 +237,7 @@ private fun HeroPanel(pulse: Float) {
                 Text("NEXT-GEN ANDROID DESKTOP", color=Ice, fontSize=8.sp, letterSpacing=1.3.sp)
             }
             Spacer(Modifier.height(12.dp))
-            Text("قوة الكمبيوتر.
-في جيبك.", color=Silver, fontSize=27.sp, fontWeight=FontWeight.Black, lineHeight=34.sp)
+            Text("قوة الكمبيوتر. في جيبك.", color=Silver, fontSize=27.sp, fontWeight=FontWeight.Black, lineHeight=34.sp)
             Spacer(Modifier.height(8.dp))
             Text("بوابتك إلى عالم HASNITECH", color=Color(0xFFB6CBE6), fontSize=12.sp)
             Spacer(Modifier.height(13.dp))
