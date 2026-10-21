@@ -367,33 +367,134 @@ private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, s
 
 @Composable
 private fun AppInstallPanel(context: android.content.Context, cyan: Color, silver: Color, dim: Color, blue: Color) {
-    val apkPicker = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            try {
-                val installIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "application/vnd.android.package-archive")
-                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                context.startActivity(installIntent)
-            } catch (_: Exception) {
-                try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) } catch (_: Exception) { }
-            }
+    var downloadUrl by remember { mutableStateOf("") }
+    var searchText by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf("اختر برنامجًا من المصادر الرسمية أو ألصق رابط ملف EXE/MSI مباشرًا.") }
+    var lastDownloadId by remember { mutableStateOf<Long?>(null) }
+    val sources = listOf(
+        Triple("7-Zip", "ضغط وفك ضغط الملفات", "https://www.7-zip.org/"),
+        Triple("LibreOffice", "بديل مكتبي مجاني لـ Windows", "https://www.libreoffice.org/download/download-libreoffice/"),
+        Triple("VLC", "مشغل فيديو وصوت", "https://www.videolan.org/vlc/"),
+        Triple("GIMP", "تحرير الصور", "https://www.gimp.org/downloads/"),
+        Triple("Winlator", "محرك توافق لتشغيل بعض برامج Windows على Android", "https://github.com/brunodev85/winlator/releases")
+    )
+    fun openUrl(url: String) {
+        try {
+            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+        } catch (_: Exception) {
+            status = "تعذر فتح الرابط. تحقق من اتصال الإنترنت."
         }
     }
-    Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Rounded.Apps, null, tint = cyan, modifier = Modifier.size(44.dp))
-        Spacer(Modifier.height(8.dp))
-        Text("APPLICATION CENTER", color = cyan, fontSize = 16.sp, fontWeight = FontWeight.Black)
-        Text("تثبيت تطبيقات Android بصيغة APK", color = silver, fontSize = 11.sp)
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = { apkPicker.launch(arrayOf("application/vnd.android.package-archive", "application/octet-stream")) },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
-            Icon(Icons.Rounded.FileOpen, null); Spacer(Modifier.width(6.dp)); Text("اختيار ملف APK", fontSize = 11.sp)
+    fun startDownload() {
+        val raw = downloadUrl.trim()
+        val uri = try { android.net.Uri.parse(raw) } catch (_: Exception) { null }
+        val scheme = uri?.scheme?.lowercase()
+        val path = uri?.lastPathSegment?.lowercase().orEmpty()
+        if (uri == null || scheme != "https" || !(path.endsWith(".exe") || path.endsWith(".msi"))) {
+            status = "أدخل رابط HTTPS مباشرًا ينتهي بـ .exe أو .msi. روابط صفحات المواقع ليست روابط ملفات مباشرة."
+            return
         }
-        Spacer(Modifier.height(8.dp))
-        Text("هذا الزر يفتح مُثبّت Android لتطبيقات APK فقط. ملفات EXE تحتاج محرك Windows مثل Wine/Box64.", color = dim, fontSize = 9.sp, lineHeight = 14.sp)
+        try {
+            val fileName = uri.lastPathSegment?.replace(Regex("[^A-Za-z0-9._-]"), "_")?.take(120)
+                ?.takeIf { it.endsWith(".exe", true) || it.endsWith(".msi", true) }
+                ?: "windows_program_${System.currentTimeMillis()}.exe"
+            val request = android.app.DownloadManager.Request(uri)
+                .setTitle(fileName)
+                .setDescription("HASNITECH • Windows program")
+                .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(false)
+                .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "HASNITECH/$fileName")
+            val manager = context.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager
+            lastDownloadId = manager.enqueue(request)
+            status = "بدأ التنزيل في الخلفية. ستصلك إشعارات عند اكتماله، والملف سيُحفظ في Downloads/HASNITECH."
+        } catch (e: Exception) {
+            status = "تعذر بدء التنزيل: ${e.message ?: "تحقق من الرابط والمساحة المتاحة"}"
+        }
+    }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.Window, null, tint = cyan, modifier = Modifier.size(34.dp))
+            Spacer(Modifier.width(9.dp))
+            Column(Modifier.weight(1f)) {
+                Text("WINDOWS SOFTWARE STORE", color = cyan, fontSize = 15.sp, fontWeight = FontWeight.Black)
+                Text("تنزيل برامج Windows • EXE / MSI", color = silver, fontSize = 10.sp)
+            }
+        }
+        Text("مصادر رسمية", color = silver, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        sources.forEach { item ->
+            Surface(
+                onClick = { openUrl(item.third) },
+                color = Color(0xD90A1730),
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, cyan.copy(alpha = .22f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Download, null, tint = cyan, modifier = Modifier.size(21.dp))
+                    Spacer(Modifier.width(9.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(item.first, color = silver, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(item.second, color = dim, fontSize = 9.sp)
+                    }
+                    Icon(Icons.Rounded.OpenInBrowser, null, tint = cyan, modifier = Modifier.size(17.dp))
+                }
+            }
+        }
+        HorizontalDivider(color = cyan.copy(alpha = .25f))
+        Text("تنزيل مباشر", color = silver, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        OutlinedTextField(
+            value = downloadUrl,
+            onValueChange = { downloadUrl = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("رابط مباشر لملف .EXE أو .MSI", fontSize = 10.sp) },
+            placeholder = { Text("https://example.com/program.exe", fontSize = 10.sp) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = silver, unfocusedTextColor = silver,
+                focusedBorderColor = cyan, unfocusedBorderColor = Color(0xFF29415E),
+                focusedLabelColor = cyan, unfocusedLabelColor = dim,
+                cursorColor = cyan
+            )
+        )
+        Button(onClick = { startDownload() }, modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+            Icon(Icons.Rounded.Download, null); Spacer(Modifier.width(7.dp)); Text("تنزيل ملف Windows")
+        }
+        OutlinedTextField(
+            value = searchText,
+            onValueChange = { searchText = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("ابحث عن برنامج Windows", fontSize = 10.sp) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = silver, unfocusedTextColor = silver,
+                focusedBorderColor = cyan, unfocusedBorderColor = Color(0xFF29415E),
+                focusedLabelColor = cyan, unfocusedLabelColor = dim,
+                cursorColor = cyan
+            )
+        )
+        OutlinedButton(onClick = {
+            if (searchText.isNotBlank()) openUrl("https://www.google.com/search?q=" + android.net.Uri.encode(searchText.trim() + " official Windows download"))
+            else status = "اكتب اسم البرنامج أولًا."
+        }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Rounded.Search, null); Spacer(Modifier.width(6.dp)); Text("البحث عن المصدر الرسمي")
+        }
+        Surface(color = Color(0xFF101D32), shape = RoundedCornerShape(9.dp)) {
+            Text(status, modifier = Modifier.padding(10.dp), color = if (status.startsWith("تعذر") || status.startsWith("أدخل")) Color(0xFFFFB4A9) else silver, fontSize = 10.sp, lineHeight = 15.sp)
+        }
+        Text("مهم: تنزيل EXE/MSI لا يعني أنه أصبح قابلًا للتثبيت على Android. يلزم Winlator/بيئة توافق متوافقة؛ HASNITECH لا يدمج محرك Windows حتى الآن. نزّل من مصادر موثوقة فقط.", color = dim, fontSize = 9.sp, lineHeight = 14.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { openUrl("https://github.com/brunodev85/winlator/releases") }, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(4.dp)); Text("محرك Winlator", fontSize = 10.sp)
+            }
+            OutlinedButton(onClick = {
+                try { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS)) }
+                catch (_: Exception) { openUrl("https://support.google.com/android/answer/7431795") }
+            }, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Rounded.FolderOpen, null); Spacer(Modifier.width(4.dp)); Text("مساحة التخزين", fontSize = 10.sp)
+            }
+        }
     }
 }
 
