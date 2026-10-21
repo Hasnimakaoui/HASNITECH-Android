@@ -400,80 +400,131 @@ private fun HeroPanel(pulse: Float) {
 @Composable
 private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
     val scan by rememberInfiniteTransition(label = "holoScan").animateFloat(
-        initialValue = 0.08f, targetValue = 0.92f,
-        animationSpec = infiniteRepeatable(tween(2200), RepeatMode.Reverse),
+        initialValue = 0.10f, targetValue = 0.90f,
+        animationSpec = infiniteRepeatable(tween(1900), RepeatMode.Reverse),
         label = "scanLine"
+    )
+    val orbit by rememberInfiniteTransition(label = "holoOrbit").animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(7000), RepeatMode.Restart),
+        label = "orbit"
     )
     Canvas(modifier) {
         val w = size.width
         val h = size.height
-        val cx = w * .52f
-        val cyan = Color(0xFF5CF6FF)
-        val blue = Color(0xFF238BFF)
-        val violet = Color(0xFF9A6BFF)
-        // Holographic emitter rings and ambient light.
-        drawCircle(Brush.radialGradient(listOf(blue.copy(alpha = .24f * pulse), violet.copy(alpha = .10f), Color.Transparent), Offset(cx, h * .55f), h * .57f), h * .57f, Offset(cx, h * .55f))
-        drawOval(cyan.copy(alpha = .55f * pulse), Offset(cx - w*.31f, h*.84f), androidx.compose.ui.geometry.Size(w*.62f, h*.075f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.4f))
-        drawOval(blue.copy(alpha = .45f), Offset(cx - w*.23f, h*.86f), androidx.compose.ui.geometry.Size(w*.46f, h*.045f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1f))
-        // Shoulders, neck and head are drawn as luminous vector contours, not a static image.
-        val shoulders = androidx.compose.ui.graphics.Path().apply {
-            moveTo(cx-w*.34f, h*.82f)
-            cubicTo(cx-w*.31f,h*.68f,cx-w*.19f,h*.68f,cx-w*.12f,h*.66f)
-            lineTo(cx-w*.09f,h*.57f)
-            cubicTo(cx-w*.18f,h*.49f,cx-w*.20f,h*.40f,cx-w*.18f,h*.30f)
-            cubicTo(cx-w*.15f,h*.10f,cx+w*.15f,h*.10f,cx+w*.18f,h*.30f)
-            cubicTo(cx+w*.20f,h*.40f,cx+w*.18f,h*.49f,cx+w*.09f,h*.57f)
-            lineTo(cx+w*.12f,h*.66f)
-            cubicTo(cx+w*.19f,h*.68f,cx+w*.31f,h*.68f,cx+w*.34f,h*.82f)
+        val cx = w * .50f
+        val cy = h * .48f
+        val cyan = Color(0xFF69F8FF)
+        val ice = Color(0xFFD8FFFF)
+        val blue = Color(0xFF218BFF)
+        val violet = Color(0xFF9D63FF)
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = (w * .0032f).coerceIn(1f, 2.4f))
+        // Volumetric glow and a layered holographic projector platform.
+        drawCircle(Brush.radialGradient(listOf(blue.copy(alpha=.23f*pulse), violet.copy(alpha=.10f), Color.Transparent), Offset(cx,cy), h*.53f), h*.53f, Offset(cx,cy))
+        for (i in 0..5) {
+            val yy = h*(.79f+i*.026f)
+            drawOval((if(i%2==0) cyan else blue).copy(alpha=.50f-i*.055f), Offset(cx-w*(.22f+i*.035f),yy), androidx.compose.ui.geometry.Size(w*(.44f+i*.07f),h*(.018f+i*.003f)), style=androidx.compose.ui.graphics.drawscope.Stroke(width=1.2f))
         }
-        drawPath(shoulders, cyan.copy(alpha = .82f * pulse), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f))
-        val face = androidx.compose.ui.graphics.Path().apply {
-            moveTo(cx-w*.18f,h*.31f)
-            lineTo(cx-w*.15f,h*.22f)
-            lineTo(cx-w*.08f,h*.15f)
-            lineTo(cx+w*.08f,h*.15f)
-            lineTo(cx+w*.15f,h*.22f)
-            lineTo(cx+w*.18f,h*.31f)
-            lineTo(cx+w*.14f,h*.43f)
-            lineTo(cx+w*.07f,h*.49f)
-            lineTo(cx-w*.07f,h*.49f)
-            lineTo(cx-w*.14f,h*.43f)
+        // Broken orbital rings around the projection.
+        for (i in 0..2) {
+            val ow=w*(.27f+i*.065f)
+            val oy=h*(.25f+i*.035f)
+            drawArc(cyan.copy(alpha=.38f*pulse), startAngle=205f+orbit*80f+i*35f, sweepAngle=105f, useCenter=false, topLeft=Offset(cx-ow,cy-oy), size=androidx.compose.ui.geometry.Size(ow*2,oy*2), style=stroke)
+            drawArc(violet.copy(alpha=.42f), startAngle=25f-orbit*60f+i*25f, sweepAngle=90f, useCenter=false, topLeft=Offset(cx-ow,cy-oy), size=androidx.compose.ui.geometry.Size(ow*2,oy*2), style=stroke)
+        }
+        // Torso silhouette with a luminous inner gradient.
+        val torso = androidx.compose.ui.graphics.Path().apply {
+            moveTo(cx-w*.30f,h*.82f)
+            lineTo(cx-w*.27f,h*.70f)
+            cubicTo(cx-w*.24f,h*.64f,cx-w*.17f,h*.62f,cx-w*.105f,h*.60f)
+            lineTo(cx-w*.085f,h*.535f)
+            lineTo(cx+w*.085f,h*.535f)
+            lineTo(cx+w*.105f,h*.60f)
+            cubicTo(cx+w*.17f,h*.62f,cx+w*.24f,h*.64f,cx+w*.27f,h*.70f)
+            lineTo(cx+w*.30f,h*.82f)
             close()
         }
-        drawPath(face, Brush.verticalGradient(listOf(cyan.copy(alpha=.13f), blue.copy(alpha=.05f), violet.copy(alpha=.10f)), h*.14f, h*.51f))
-        drawPath(face, cyan.copy(alpha = .95f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.1f))
-        // Brow, cheek and jaw details create a mechanical android face.
-        drawLine(blue.copy(alpha=.9f), Offset(cx-w*.145f,h*.30f), Offset(cx-w*.055f,h*.285f), 2f)
-        drawLine(blue.copy(alpha=.9f), Offset(cx+w*.055f,h*.285f), Offset(cx+w*.145f,h*.30f), 2f)
-        drawLine(cyan.copy(alpha=.8f), Offset(cx-w*.12f,h*.40f), Offset(cx-w*.07f,h*.44f), 1.1f)
-        drawLine(cyan.copy(alpha=.8f), Offset(cx+w*.12f,h*.40f), Offset(cx+w*.07f,h*.44f), 1.1f)
-        // Glowing eyes with outer halos.
-        listOf(-1f, 1f).forEach { side ->
-            val eye = Offset(cx + side*w*.078f, h*.345f)
-            drawCircle(blue.copy(alpha=.35f*pulse), w*.055f, eye)
-            drawLine(cyan.copy(alpha=.95f), Offset(eye.x-w*.035f,eye.y), Offset(eye.x+w*.035f,eye.y), 3.2f, cap=StrokeCap.Round)
-            drawCircle(Color.White.copy(alpha=.8f), 1.5f, eye)
+        drawPath(torso, Brush.verticalGradient(listOf(Color(0xAA43DFFF), Color(0x33336BFF), Color(0x226B42FF)), h*.55f,h*.84f))
+        drawPath(torso, cyan.copy(alpha=.85f*pulse), style=stroke)
+        // Armour plates and fine illuminated circuit paths.
+        drawLine(blue.copy(alpha=.9f),Offset(cx-w*.23f,h*.70f),Offset(cx-w*.11f,h*.665f),2f)
+        drawLine(blue.copy(alpha=.9f),Offset(cx+w*.23f,h*.70f),Offset(cx+w*.11f,h*.665f),2f)
+        drawLine(cyan.copy(alpha=.7f),Offset(cx-w*.16f,h*.75f),Offset(cx-w*.035f,h*.75f),1.3f)
+        drawLine(cyan.copy(alpha=.7f),Offset(cx+w*.16f,h*.75f),Offset(cx+w*.035f,h*.75f),1.3f)
+        drawLine(violet.copy(alpha=.85f),Offset(cx,h*.64f),Offset(cx,h*.77f),1.8f)
+        for (side in listOf(-1f,1f)) {
+            val sx=cx+side*w*.19f
+            drawCircle(cyan.copy(alpha=.8f),w*.009f,Offset(sx,h*.70f))
+            drawLine(cyan.copy(alpha=.55f),Offset(sx,h*.70f),Offset(cx+side*w*.12f,h*.735f),1.1f)
         }
-        drawLine(violet.copy(alpha=.9f), Offset(cx,h*.36f), Offset(cx-w*.018f,h*.405f), 1.5f)
-        drawLine(cyan.copy(alpha=.9f), Offset(cx-w*.055f,h*.455f), Offset(cx+w*.055f,h*.455f), 1.4f)
-        // Fine scanlines and animated scanning beam make the hologram visibly alive.
-        var y = h*.16f
-        while (y < h*.84f) {
-            drawLine(cyan.copy(alpha=.075f), Offset(cx-w*.27f,y), Offset(cx+w*.27f,y), .8f)
-            y += 5.5f
+        // Neck and collar.
+        drawRoundRect(blue.copy(alpha=.65f),Offset(cx-w*.075f,h*.49f),androidx.compose.ui.geometry.Size(w*.15f,h*.12f),androidx.compose.ui.geometry.CornerRadius(w*.025f),style=stroke)
+        drawArc(cyan.copy(alpha=.9f),180f,180f,false,Offset(cx-w*.19f,h*.56f),androidx.compose.ui.geometry.Size(w*.38f,h*.16f),style=stroke)
+        // Sculpted android head, with cheek and jaw geometry.
+        val head = androidx.compose.ui.graphics.Path().apply {
+            moveTo(cx-w*.17f,h*.30f)
+            lineTo(cx-w*.145f,h*.215f)
+            lineTo(cx-w*.075f,h*.155f)
+            quadraticTo(cx,h*.128f,cx+w*.075f,h*.155f)
+            lineTo(cx+w*.145f,h*.215f)
+            lineTo(cx+w*.17f,h*.30f)
+            lineTo(cx+w*.145f,h*.405f)
+            lineTo(cx+w*.09f,h*.465f)
+            lineTo(cx+w*.045f,h*.49f)
+            lineTo(cx-w*.045f,h*.49f)
+            lineTo(cx-w*.09f,h*.465f)
+            lineTo(cx-w*.145f,h*.405f)
+            close()
         }
-        val beamY = h * scan
-        drawLine(cyan.copy(alpha=.68f*pulse), Offset(w*.12f,beamY), Offset(w*.88f,beamY), 1.2f)
-        drawCircle(cyan.copy(alpha=.85f*pulse), 2.4f, Offset(w*.12f,beamY))
-        drawCircle(cyan.copy(alpha=.85f*pulse), 2.4f, Offset(w*.88f,beamY))
-        // Floating data particles.
-        for (i in 0..11) {
-            val px = w * (.12f + ((i * 37) % 76) / 100f)
-            val py = h * (.13f + ((i * 23) % 72) / 100f)
-            drawCircle(if (i % 3 == 0) violet.copy(alpha=.8f*pulse) else cyan.copy(alpha=.65f), if (i%3==0) 1.8f else 1.1f, Offset(px,py))
+        drawPath(head, Brush.linearGradient(listOf(Color(0xBB247EBA), Color(0x88413DA4), Color(0xAA081A3D)), Offset(cx-w*.2f,h*.15f), Offset(cx+w*.2f,h*.5f)))
+        drawPath(head, cyan.copy(alpha=.96f*pulse), style=androidx.compose.ui.graphics.drawscope.Stroke(width=2.1f))
+        // Temple panels and angular cheek armour.
+        drawLine(violet.copy(alpha=.9f),Offset(cx-w*.145f,h*.25f),Offset(cx-w*.11f,h*.38f),1.5f)
+        drawLine(violet.copy(alpha=.9f),Offset(cx+w*.145f,h*.25f),Offset(cx+w*.11f,h*.38f),1.5f)
+        drawLine(cyan.copy(alpha=.8f),Offset(cx-w*.14f,h*.395f),Offset(cx-w*.075f,h*.43f),1.2f)
+        drawLine(cyan.copy(alpha=.8f),Offset(cx+w*.14f,h*.395f),Offset(cx+w*.075f,h*.43f),1.2f)
+        // Forehead crest and glowing optical sensors.
+        drawPath(androidx.compose.ui.graphics.Path().apply {
+            moveTo(cx-w*.095f,h*.20f); lineTo(cx,h*.165f); lineTo(cx+w*.095f,h*.20f)
+            lineTo(cx+w*.06f,h*.235f); lineTo(cx-w*.06f,h*.235f); close()
+        }, blue.copy(alpha=.8f), style=stroke)
+        for (side in listOf(-1f,1f)) {
+            val eye=Offset(cx+side*w*.073f,h*.325f)
+            drawCircle(blue.copy(alpha=.45f*pulse),w*.052f,eye)
+            drawRoundRect(cyan.copy(alpha=.98f),Offset(eye.x-w*.037f,eye.y-h*.009f),androidx.compose.ui.geometry.Size(w*.074f,h*.018f),androidx.compose.ui.geometry.CornerRadius(h*.009f))
+            drawLine(ice,Offset(eye.x-w*.023f,eye.y),Offset(eye.x+w*.023f,eye.y),1.2f)
+        }
+        // Nose bridge, segmented mouth and chin light.
+        drawLine(cyan.copy(alpha=.75f),Offset(cx,h*.34f),Offset(cx-w*.018f,h*.395f),1.4f)
+        drawLine(cyan.copy(alpha=.9f),Offset(cx-w*.045f,h*.425f),Offset(cx+w*.045f,h*.425f),1.4f)
+        drawLine(violet.copy(alpha=.9f),Offset(cx-w*.035f,h*.442f),Offset(cx+w*.035f,h*.442f),1.1f)
+        drawArc(cyan.copy(alpha=.8f),15f,150f,false,Offset(cx-w*.055f,h*.445f),androidx.compose.ui.geometry.Size(w*.11f,h*.06f),style=stroke)
+        // Fine scanlines clipped visually to the face/torso zone, moving beam and particles.
+        var y=h*.17f
+        while(y<h*.82f) {
+            drawLine(cyan.copy(alpha=.065f),Offset(cx-w*.28f,y),Offset(cx+w*.28f,y),.75f)
+            y+=h*.012f
+        }
+        val beamY=h*scan
+        drawLine(ice.copy(alpha=.75f*pulse),Offset(w*.09f,beamY),Offset(w*.91f,beamY),1.2f)
+        drawCircle(ice.copy(alpha=.9f),2.2f,Offset(w*.09f,beamY))
+        drawCircle(ice.copy(alpha=.9f),2.2f,Offset(w*.91f,beamY))
+        for(i in 0..23) {
+            val px=w*(.08f+((i*41)%85)/100f)
+            val py=h*(.13f+((i*29)%73)/100f)
+            val r=if(i%4==0) 2.0f else 1.0f
+            drawCircle(if(i%4==0) violet.copy(alpha=.85f*pulse) else cyan.copy(alpha=.68f),r,Offset(px,py))
+            if(i%6==0) drawLine(cyan.copy(alpha=.38f),Offset(px,py),Offset(px+(if(i%2==0) 9f else -9f),py-8f),.8f)
+        }
+        // Small floating telemetry marks at both sides of the projection.
+        for(i in 0..3) {
+            val yy=h*(.30f+i*.075f)
+            drawLine(blue.copy(alpha=.65f),Offset(w*.07f,yy),Offset(w*(.12f+(i%2)*.025f),yy),1.1f)
+            drawLine(violet.copy(alpha=.65f),Offset(w*.88f,yy),Offset(w*(.93f-(i%2)*.025f),yy),1.1f)
         }
     }
 }
+
 @Composable
 private fun MetricPanel(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector,
                         title: String, value: String, detail: String) {
