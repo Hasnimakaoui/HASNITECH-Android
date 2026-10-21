@@ -215,7 +215,7 @@ private fun HasniTechDashboard() {
             }
             Row(Modifier.fillMaxSize().padding(10.dp), horizontalArrangement=Arrangement.spacedBy(9.dp)) {
                 // Fixed left navigation rail, matching the reference dashboard.
-                Column(Modifier.width(158.dp).fillMaxHeight().clip(RoundedCornerShape(16.dp))
+                Column(Modifier.fillMaxWidth(.19f).fillMaxHeight().clip(RoundedCornerShape(16.dp))
                     .background(panel).border(1.dp, cyan.copy(alpha=.45f), RoundedCornerShape(16.dp)).padding(8.dp),
                     verticalArrangement=Arrangement.spacedBy(5.dp)) {
                     Row(verticalAlignment=Alignment.CenterVertically, modifier=Modifier.padding(vertical=8.dp, horizontal=3.dp)) {
@@ -293,7 +293,7 @@ private fun HasniTechDashboard() {
                     }
                 }
                 // Right-side device status and launchable shortcuts.
-                Column(Modifier.width(235.dp).fillMaxHeight(), verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.fillMaxWidth(.27f).fillMaxHeight(), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(panel).border(1.dp,cyan.copy(alpha=.4f),RoundedCornerShape(14.dp)).padding(11.dp)) {
                         Text("الجهاز والنظام",color=cyan,fontSize=12.sp,fontWeight=FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
@@ -309,7 +309,7 @@ private fun HasniTechDashboard() {
                         Spacer(Modifier.height(7.dp))
                         val apps=listOf(Triple(Icons.Rounded.Language,"Chrome","Browser"),Triple(Icons.Rounded.PlayArrow,"YouTube","Media"),Triple(Icons.Rounded.Chat,"WhatsApp","Messages"),Triple(Icons.Rounded.Gamepad,"Games","Gaming"),Triple(Icons.Rounded.Description,"Office","Documents"),Triple(Icons.Rounded.Photo,"Photos","Gallery"))
                         apps.forEach { app ->
-                            Surface(onClick={ if(app.second=="Chrome") { val intent=android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse("https://www.google.com")); try { /* Launch external browser */ } catch (_:Exception) {} ; showWindowsInfo=true } else showWindowsInfo=true },
+                            Surface(onClick={ if(app.second=="Chrome") { val intent=android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse("https://www.google.com")); try { startActivity(intent) } catch (_:Exception) { showWindowsInfo=true } } else showWindowsInfo=true },
                                 color=Color(0xFF0B1B36),shape=RoundedCornerShape(9.dp),border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF173D6B)),
                                 modifier=Modifier.fillMaxWidth().weight(1f).padding(vertical=2.dp)) {
                                 Row(Modifier.padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically) {
