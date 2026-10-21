@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -196,6 +197,7 @@ fun HasniTechApp() {
 
 @Composable
 private fun HasniTechDashboard() {
+    val context = LocalContext.current
     var page by remember { mutableIntStateOf(0) }
     var showWindowsInfo by remember { mutableStateOf(false) }
     val pulseTransition = rememberInfiniteTransition(label = "dashboardPulse")
@@ -309,7 +311,7 @@ private fun HasniTechDashboard() {
                         Spacer(Modifier.height(7.dp))
                         val apps=listOf(Triple(Icons.Rounded.Language,"Chrome","Browser"),Triple(Icons.Rounded.PlayArrow,"YouTube","Media"),Triple(Icons.Rounded.Chat,"WhatsApp","Messages"),Triple(Icons.Rounded.Gamepad,"Games","Gaming"),Triple(Icons.Rounded.Description,"Office","Documents"),Triple(Icons.Rounded.Photo,"Photos","Gallery"))
                         apps.forEach { app ->
-                            Surface(onClick={ if(app.second=="Chrome") { val intent=android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse("https://www.google.com")); try { android.content.ContextWrapper(this@MainActivity).startActivity(intent) } catch (_:Exception) { showWindowsInfo=true } } else showWindowsInfo=true },
+                            Surface(onClick={ if(app.second=="Chrome") { val intent=android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse("https://www.google.com")); try { context.startActivity(intent) } catch (_:Exception) { showWindowsInfo=true } } else showWindowsInfo=true },
                                 color=Color(0xFF0B1B36),shape=RoundedCornerShape(9.dp),border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF173D6B)),
                                 modifier=Modifier.fillMaxWidth().weight(1f).padding(vertical=2.dp)) {
                                 Row(Modifier.padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically) {
