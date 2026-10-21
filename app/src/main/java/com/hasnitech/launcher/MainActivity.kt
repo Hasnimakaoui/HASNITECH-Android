@@ -244,7 +244,7 @@ private fun HasniTechDashboard() {
                     Surface(color=Color(0xFF101B40), shape=RoundedCornerShape(9.dp), modifier=Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(8.dp)) {
                             Icon(Icons.Rounded.SportsEsports,null,tint=Color(0xFF9B7BFF),modifier=Modifier.size(22.dp))
-                            Text("وضع الألعاب",color=Silver,fontSize=10.sp)
+                            Text("وضع الألعاب",color=Silver,fontSize=10.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
                             Text("OFF",color=cyan,fontSize=9.sp)
                         }
                     }
@@ -254,7 +254,7 @@ private fun HasniTechDashboard() {
                     Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment=Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("HASNITECH  /  CONTROL CENTER", color=cyan, fontSize=11.sp, fontWeight=FontWeight.Bold, letterSpacing=1.2.sp)
-                            Text(when(page){1->"WINDOWS ENVIRONMENT";2->"APPLICATION LIBRARY";3->"FILE CENTER";4->"SYSTEM SETTINGS";5->"SYSTEM TOOLS";6->"SUPPORT CENTER";else->"قوة التكنولوجيا بين يديك"}, color=Silver, fontSize=9.sp)
+                            Text(when(page){1->"WINDOWS ENVIRONMENT";2->"APPLICATION LIBRARY";3->"FILE CENTER";4->"SYSTEM SETTINGS";5->"SYSTEM TOOLS";6->"SUPPORT CENTER";else->"قوة التكنولوجيا بين يديك"}, color=Silver, fontSize=9.sp, maxLines=1, overflow=TextOverflow.Ellipsis)
                         }
                         Surface(color=Color(0xFF092E2B), shape=CircleShape, border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF27D9C0))) {
                             Row(Modifier.padding(horizontal=9.dp,vertical=5.dp), verticalAlignment=Alignment.CenterVertically) {
@@ -288,7 +288,7 @@ private fun HasniTechDashboard() {
                                 border=androidx.compose.foundation.BorderStroke(1.dp,cyan.copy(alpha=.25f))) {
                                 Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
                                     Icon(item.first,null,tint=cyan,modifier=Modifier.size(20.dp))
-                                    Spacer(Modifier.height(4.dp)); Text(item.second,color=Silver,fontSize=9.sp)
+                                    Spacer(Modifier.height(4.dp)); Text(item.second,color=Silver,fontSize=9.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
                                 }
                             }
                         }
@@ -317,7 +317,7 @@ private fun HasniTechDashboard() {
                                 Row(Modifier.padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically) {
                                     Icon(app.first,null,tint=if(app.second=="Games") Color(0xFFAA83FF) else cyan,modifier=Modifier.size(21.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Column { Text(app.second,color=Silver,fontSize=10.sp,fontWeight=FontWeight.Bold); Text(app.third,color=Dim,fontSize=7.sp) }
+                                    Column(Modifier.weight(1f)) { Text(app.second,color=Silver,fontSize=10.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis); Text(app.third,color=Dim,fontSize=7.sp,maxLines=1,overflow=TextOverflow.Ellipsis) }
                                     Spacer(Modifier.weight(1f)); Icon(Icons.Rounded.ChevronRight,null,tint=Dim,modifier=Modifier.size(15.dp))
                                 }
                             }
@@ -327,7 +327,7 @@ private fun HasniTechDashboard() {
                         Row(verticalAlignment=Alignment.CenterVertically) {
                             Icon(Icons.Rounded.Memory,null,tint=Color(0xFFB19AFF),modifier=Modifier.size(22.dp))
                             Spacer(Modifier.width(7.dp))
-                            Column { Text("مساعد HASNI AI",color=Silver,fontSize=10.sp,fontWeight=FontWeight.Bold); Text("محرك Windows غير مدمج بعد",color=Dim,fontSize=7.sp) }
+                            Column(Modifier.weight(1f)) { Text("مساعد HASNI AI",color=Silver,fontSize=10.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis); Text("محرك Windows غير مدمج بعد",color=Dim,fontSize=7.sp,maxLines=1,overflow=TextOverflow.Ellipsis) }
                         }
                         if(showWindowsInfo) { Spacer(Modifier.height(6.dp)); Text("هذه واجهة اختصارات. يلزم ربط كل تطبيق بمحركه أو تطبيق مثبت لتشغيله فعليًا.",color=Silver,fontSize=8.sp) }
                     }
