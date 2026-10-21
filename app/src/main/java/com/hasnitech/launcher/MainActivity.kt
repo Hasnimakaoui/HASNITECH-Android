@@ -236,7 +236,7 @@ private fun HasniTechDashboard() {
                             Row(Modifier.fillMaxWidth().padding(horizontal=8.dp), verticalAlignment=Alignment.CenterVertically) {
                                 Icon(item.first,null,tint=if(page==item.third) cyan else Color(0xFF77A8E8), modifier=Modifier.size(19.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text(item.second,color=Silver,fontSize=10.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
+                                Text(item.second,color=Silver,fontSize=10.sp,maxLines=1,softWrap=false,overflow=TextOverflow.Clip, modifier=Modifier.weight(1f))
                             }
                         }
                     }
@@ -244,7 +244,7 @@ private fun HasniTechDashboard() {
                     Surface(color=Color(0xFF101B40), shape=RoundedCornerShape(9.dp), modifier=Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(8.dp)) {
                             Icon(Icons.Rounded.SportsEsports,null,tint=Color(0xFF9B7BFF),modifier=Modifier.size(22.dp))
-                            Text("وضع الألعاب",color=Silver,fontSize=10.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
+                            Text("وضع الألعاب",color=Silver,fontSize=10.sp,maxLines=1,softWrap=false,overflow=TextOverflow.Clip)
                             Text("OFF",color=cyan,fontSize=9.sp)
                         }
                     }
@@ -317,8 +317,11 @@ private fun HasniTechDashboard() {
                                 Row(Modifier.padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically) {
                                     Icon(app.first,null,tint=if(app.second=="Games") Color(0xFFAA83FF) else cyan,modifier=Modifier.size(21.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Column(Modifier.weight(1f)) { Text(app.second,color=Silver,fontSize=10.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis); Text(app.third,color=Dim,fontSize=7.sp,maxLines=1,overflow=TextOverflow.Ellipsis) }
-                                    Spacer(Modifier.weight(1f)); Icon(Icons.Rounded.ChevronRight,null,tint=Dim,modifier=Modifier.size(15.dp))
+                                    Column(Modifier.weight(1f), verticalArrangement=Arrangement.Center) {
+                                        Text(app.second,color=Silver,fontSize=10.sp,fontWeight=FontWeight.Bold,maxLines=1,softWrap=false,overflow=TextOverflow.Clip)
+                                        Text(app.third,color=Dim,fontSize=7.sp,maxLines=1,softWrap=false,overflow=TextOverflow.Clip)
+                                    }
+                                    Icon(Icons.Rounded.ChevronRight,null,tint=Dim,modifier=Modifier.size(15.dp))
                                 }
                             }
                         }
