@@ -217,7 +217,7 @@ private fun HasniTechDashboard() {
             }
             Row(Modifier.fillMaxSize().padding(10.dp), horizontalArrangement=Arrangement.spacedBy(9.dp)) {
                 // Fixed left navigation rail, matching the reference dashboard.
-                Column(Modifier.fillMaxWidth(.19f).fillMaxHeight().clip(RoundedCornerShape(16.dp))
+                Column(Modifier.fillMaxWidth(.25f).fillMaxHeight().clip(RoundedCornerShape(16.dp))
                     .background(panel).border(1.dp, cyan.copy(alpha=.45f), RoundedCornerShape(16.dp)).padding(8.dp),
                     verticalArrangement=Arrangement.spacedBy(5.dp)) {
                     Row(verticalAlignment=Alignment.CenterVertically, modifier=Modifier.padding(vertical=8.dp, horizontal=3.dp)) {
@@ -233,10 +233,10 @@ private fun HasniTechDashboard() {
                         Surface(onClick={page=item.third}, color=if(page==item.third) Color(0xFF103A67) else Color.Transparent,
                             shape=RoundedCornerShape(9.dp), border=androidx.compose.foundation.BorderStroke(1.dp,if(page==item.third) cyan.copy(alpha=.8f) else Color.Transparent),
                             modifier=Modifier.fillMaxWidth().weight(1f)) {
-                            Row(Modifier.fillMaxWidth().padding(horizontal=8.dp), verticalAlignment=Alignment.CenterVertically) {
-                                Icon(item.first,null,tint=if(page==item.third) cyan else Color(0xFF77A8E8), modifier=Modifier.size(19.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(item.second,color=Silver,fontSize=10.sp,maxLines=1,softWrap=false,overflow=TextOverflow.Clip, modifier=Modifier.weight(1f))
+                            Row(Modifier.fillMaxWidth().padding(horizontal=5.dp), verticalAlignment=Alignment.CenterVertically) {
+                                Icon(item.first,null,tint=if(page==item.third) cyan else Color(0xFF77A8E8), modifier=Modifier.size(17.dp))
+                                Spacer(Modifier.width(5.dp))
+                                Text(item.second,color=Silver,fontSize=10.sp,maxLines=2,softWrap=true,overflow=TextOverflow.Ellipsis, lineHeight=12.sp, modifier=Modifier.weight(1f))
                             }
                         }
                     }
