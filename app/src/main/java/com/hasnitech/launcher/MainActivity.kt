@@ -399,84 +399,115 @@ private fun HeroPanel(pulse: Float) {
 
 @Composable
 private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
-    val scan by rememberInfiniteTransition(label = "coreScan").animateFloat(
-        initialValue = 0.12f, targetValue = 0.88f,
-        animationSpec = infiniteRepeatable(tween(1700), RepeatMode.Reverse), label = "coreScanLine"
-    )
-    val spin by rememberInfiniteTransition(label = "coreSpin").animateFloat(
+    val phase by rememberInfiniteTransition(label = "quantumHologram").animateFloat(
         initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(9000), RepeatMode.Restart), label = "coreRotation"
+        animationSpec = infiniteRepeatable(tween(11000), RepeatMode.Restart), label = "quantumRotation"
+    )
+    val scan by rememberInfiniteTransition(label = "quantumScan").animateFloat(
+        initialValue = .08f, targetValue = .92f,
+        animationSpec = infiniteRepeatable(tween(2300), RepeatMode.Reverse), label = "quantumBeam"
+    )
+    val breathe by rememberInfiniteTransition(label = "quantumPulse").animateFloat(
+        initialValue = .72f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1300), RepeatMode.Reverse), label = "quantumBreath"
     )
     Canvas(modifier) {
         val w=size.width; val h=size.height
-        val cx=w*.5f; val cy=h*.47f
-        val cyan=Color(0xFF6DFBFF); val blue=Color(0xFF2878FF)
-        val violet=Color(0xFFB15CFF); val white=Color(0xFFE8FFFF)
-        val sw=(w*.0025f).coerceIn(1f,2f)
-        // A dimensional energy reactor — deliberately no head, face, eyes, or humanoid silhouette.
-        drawCircle(Brush.radialGradient(listOf(blue.copy(alpha=.25f*pulse),violet.copy(alpha=.12f),Color.Transparent),Offset(cx,cy),h*.52f),h*.52f,Offset(cx,cy))
-        // Rotating orbital tracks and bright moving nodes.
-        for(i in 0..4) {
-            val rw=w*(.15f+i*.047f); val rh=h*(.10f+i*.043f)
-            drawOval((if(i%2==0) cyan else violet).copy(alpha=.46f-i*.055f),
-                Offset(cx-rw,cy-rh),androidx.compose.ui.geometry.Size(rw*2,rh*2),
-                style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw))
-            drawArc(white.copy(alpha=.85f*pulse),spin+i*61f,36f,false,
-                Offset(cx-rw,cy-rh),androidx.compose.ui.geometry.Size(rw*2,rh*2),
-                style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*1.8f,cap=StrokeCap.Round))
-            val angle=Math.toRadians((spin+i*79f).toDouble())
-            drawCircle(if(i%2==0) white else cyan,w*.006f,
-                Offset(cx+(kotlin.math.cos(angle)*rw).toFloat(),cy+(kotlin.math.sin(angle)*rh).toFloat()))
-        }
-        // Tall crystalline reactor prism.
-        val top=cy-h*.27f; val bottom=cy+h*.28f
-        val crystal=androidx.compose.ui.graphics.Path().apply {
-            moveTo(cx,top); lineTo(cx+w*.105f,cy-h*.10f); lineTo(cx+w*.085f,cy+h*.17f)
-            lineTo(cx,bottom); lineTo(cx-w*.085f,cy+h*.17f); lineTo(cx-w*.105f,cy-h*.10f); close()
-        }
-        drawPath(crystal,Brush.linearGradient(listOf(Color(0xCC64F7FF),Color(0x884E6CFF),Color(0xAA160F45)),Offset(cx-w*.12f,top),Offset(cx+w*.12f,bottom)))
-        drawPath(crystal,cyan.copy(alpha=.95f*pulse),style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*1.7f))
-        // Facets make the object read as a glass/energy object, not a character.
-        drawLine(white.copy(alpha=.8f),Offset(cx,top),Offset(cx, bottom),sw)
-        drawLine(blue.copy(alpha=.95f),Offset(cx-w*.105f,cy-h*.10f),Offset(cx,cy+h*.02f),sw*1.4f)
-        drawLine(violet.copy(alpha=.95f),Offset(cx+w*.105f,cy-h*.10f),Offset(cx,cy+h*.02f),sw*1.4f)
-        drawLine(cyan.copy(alpha=.8f),Offset(cx-w*.085f,cy+h*.17f),Offset(cx,cy+h*.02f),sw)
-        drawLine(cyan.copy(alpha=.8f),Offset(cx+w*.085f,cy+h*.17f),Offset(cx,cy+h*.02f),sw)
-        // Floating hexagonal containment frames.
-        for(i in 0..1) {
-            val r=w*(.16f+i*.065f)
-            val frame=androidx.compose.ui.graphics.Path()
-            for(k in 0..6) {
-                val a=Math.toRadians((spin*(if(i==0) 1 else -.65f)+k*60f).toDouble())
-                val p=Offset(cx+(kotlin.math.cos(a)*r).toFloat(),cy+(kotlin.math.sin(a)*r*.64f).toFloat())
-                if(k==0) frame.moveTo(p.x,p.y) else frame.lineTo(p.x,p.y)
-            }
-            drawPath(frame,(if(i==0) cyan else violet).copy(alpha=.58f),style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw))
-        }
-        // Energy column and projector rings beneath the core.
-        drawLine(cyan.copy(alpha=.32f),Offset(cx,top-h*.10f),Offset(cx,cy+h*.38f),sw)
+        val cx=w*.5f; val cy=h*.46f
+        val cyan=Color(0xFF7CFBFF); val ice=Color(0xFFE9FFFF)
+        val blue=Color(0xFF3184FF); val violet=Color(0xFFB45CFF)
+        val pink=Color(0xFFFF4FCE)
+        val sw=(w*.0021f).coerceIn(.8f,1.8f)
+        val radius=h*.235f
+        // Entirely non-humanoid: a volumetric quantum hologram suspended in a projection chamber.
+        drawCircle(Brush.radialGradient(listOf(cyan.copy(alpha=.17f*pulse),blue.copy(alpha=.10f),Color.Transparent),Offset(cx,cy),h*.57f),h*.57f,Offset(cx,cy))
+        // Broad tilted orbital rails, split into animated luminous arcs.
         for(i in 0..5) {
-            val yy=h*(.78f+i*.022f)
-            drawOval((if(i%2==0) cyan else blue).copy(alpha=.55f-i*.065f),
-                Offset(cx-w*(.18f+i*.028f),yy),androidx.compose.ui.geometry.Size(w*(.36f+i*.056f),h*(.014f+i*.002f)),
+            val rx=w*(.19f+i*.032f)
+            val ry=h*(.13f+i*.022f)
+            val rotation=phase*(if(i%2==0) 1f else -.72f)+i*37f
+            drawOval((if(i%3==0) violet else cyan).copy(alpha=.34f-i*.025f),
+                Offset(cx-rx,cy-ry),androidx.compose.ui.geometry.Size(rx*2,ry*2),
+                style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw))
+            drawArc(if(i%2==0) ice.copy(alpha=.92f*pulse) else blue.copy(alpha=.95f),
+                rotation+i*21f,42f,false,Offset(cx-rx,cy-ry),
+                androidx.compose.ui.geometry.Size(rx*2,ry*2),
+                style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*2.1f,cap=StrokeCap.Round))
+            val a=Math.toRadians((rotation+i*21f+42f).toDouble())
+            drawCircle(if(i%2==0) ice else pink,w*.0048f,
+                Offset(cx+(kotlin.math.cos(a)*rx).toFloat(),cy+(kotlin.math.sin(a)*ry).toFloat()))
+        }
+        // Floating spherical wireframe: longitudes rotate, latitude bands breathe.
+        for(i in -3..3) {
+            val bandY=i*.25f
+            val bandRadius=radius*kotlin.math.sqrt((1f-bandY*bandY).coerceAtLeast(.05f))
+            drawOval(cyan.copy(alpha=.46f* (1f-kotlin.math.abs(i)*.11f)),
+                Offset(cx-bandRadius,cy+bandY*radius*.88f-bandRadius*.13f),
+                androidx.compose.ui.geometry.Size(bandRadius*2,bandRadius*.26f),
                 style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw))
         }
-        // Scan beam, particles, and technical ticks.
+        for(i in 0..7) {
+            val angle=Math.toRadians((phase+i*22.5f).toDouble())
+            val rx=radius*kotlin.math.abs(kotlin.math.cos(angle)).toFloat()
+            val ry=radius*.94f
+            drawOval((if(i%2==0) cyan else violet).copy(alpha=.52f),
+                Offset(cx-rx,cy-ry),androidx.compose.ui.geometry.Size(rx*2,ry*2),
+                style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw))
+        }
+        // Interlocking hexagonal containment cages.
+        for(i in 0..2) {
+            val rr=radius*(1.08f+i*.23f)
+            val cage=androidx.compose.ui.graphics.Path()
+            for(k in 0..6) {
+                val a=Math.toRadians((phase*(if(i==1) -.6f else .45f)+k*60f+i*18f).toDouble())
+                val px=cx+(kotlin.math.cos(a)*rr).toFloat()
+                val py=cy+(kotlin.math.sin(a)*rr*.72f).toFloat()
+                if(k==0) cage.moveTo(px,py) else cage.lineTo(px,py)
+            }
+            drawPath(cage,(if(i==1) violet else blue).copy(alpha=.63f),style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*1.25f))
+        }
+        // Dense inner plasma nucleus and faceted energy lattice.
+        drawCircle(Brush.radialGradient(listOf(ice.copy(alpha=.96f*breathe),cyan.copy(alpha=.8f),blue.copy(alpha=.28f),Color.Transparent),Offset(cx,cy),radius*.78f),radius*.78f,Offset(cx,cy))
+        for(i in 0..11) {
+            val a=Math.toRadians((phase*1.5f+i*30f).toDouble())
+            val inner=radius*.20f
+            val outer=radius*(.46f+if(i%2==0) .06f else 0f)
+            val p1=Offset(cx+(kotlin.math.cos(a)*inner).toFloat(),cy+(kotlin.math.sin(a)*inner).toFloat())
+            val p2=Offset(cx+(kotlin.math.cos(a)*outer).toFloat(),cy+(kotlin.math.sin(a)*outer).toFloat())
+            drawLine(if(i%3==0) pink.copy(alpha=.88f) else ice.copy(alpha=.75f),p1,p2,sw*1.3f)
+            drawCircle(cyan.copy(alpha=.9f),w*.0032f,p2)
+        }
+        drawCircle(ice.copy(alpha=.95f*pulse),radius*.16f,Offset(cx,cy))
+        drawCircle(cyan.copy(alpha=.85f),radius*.27f,Offset(cx,cy),style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*1.8f))
+        // Projection shafts and layered levitation platform.
+        drawLine(cyan.copy(alpha=.26f),Offset(cx,cy+radius*.95f),Offset(cx,h*.78f),sw)
+        for(i in 0..6) {
+            val yy=h*(.765f+i*.022f)
+            drawOval((if(i%2==0) cyan else violet).copy(alpha=.65f-i*.065f),
+                Offset(cx-w*(.16f+i*.027f),yy),androidx.compose.ui.geometry.Size(w*(.32f+i*.054f),h*(.012f+i*.002f)),
+                style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw))
+        }
+        // Scanning light plane and fine volumetric particles.
         val beamY=h*scan
-        drawLine(white.copy(alpha=.68f*pulse),Offset(w*.08f,beamY),Offset(w*.92f,beamY),sw)
-        for(i in 0..31) {
-            val px=w*(.08f+((i*37)%85)/100f)
-            val py=h*(.12f+((i*31)%75)/100f)
-            drawCircle(if(i%5==0) violet.copy(alpha=.9f*pulse) else cyan.copy(alpha=.62f),if(i%5==0) 2.1f else 1.1f,Offset(px,py))
-            if(i%7==0) drawLine(cyan.copy(alpha=.42f),Offset(px,py),Offset(px+if(i%2==0) 10f else -10f,py-7f),sw)
+        drawLine(ice.copy(alpha=.8f*pulse),Offset(w*.055f,beamY),Offset(w*.945f,beamY),sw*1.2f)
+        drawCircle(ice,w*.004f,Offset(w*.055f,beamY)); drawCircle(ice,w*.004f,Offset(w*.945f,beamY))
+        for(i in 0..43) {
+            val px=w*(.06f+((i*47)%89)/100f)
+            val py=h*(.10f+((i*31)%79)/100f)
+            val a=if(i%6==0) .9f*pulse else .42f
+            drawCircle(if(i%9==0) pink.copy(alpha=a) else cyan.copy(alpha=a),if(i%6==0) 1.8f else 1f,Offset(px,py))
+            if(i%8==0) {
+                drawLine(violet.copy(alpha=.58f),Offset(px-5f,py+5f),Offset(px+7f,py-7f),sw)
+                drawLine(cyan.copy(alpha=.4f),Offset(px+7f,py-7f),Offset(px+14f,py-7f),sw)
+            }
         }
-        for(i in 0..4) {
-            val yy=h*(.27f+i*.095f)
-            drawLine(blue.copy(alpha=.75f),Offset(w*.06f,yy),Offset(w*(.11f+(i%2)*.025f),yy),sw)
-            drawLine(violet.copy(alpha=.75f),Offset(w*.89f,yy),Offset(w*(.94f-(i%2)*.025f),yy),sw)
+        // Side telemetry ticks frame the object without obscuring the hologram.
+        for(i in 0..5) {
+            val yy=h*(.24f+i*.088f)
+            val len=w*(.025f+(i%3)*.012f)
+            drawLine(blue.copy(alpha=.8f),Offset(w*.035f,yy),Offset(w*.035f+len,yy),sw)
+            drawLine(violet.copy(alpha=.8f),Offset(w*.965f,yy),Offset(w*.965f-len,yy),sw)
         }
-        drawCircle(white.copy(alpha=.9f*pulse),w*.009f,Offset(cx,top))
-        drawCircle(cyan.copy(alpha=.75f),w*.014f,Offset(cx,bottom))
     }
 }
 
