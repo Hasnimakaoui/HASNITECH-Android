@@ -272,14 +272,6 @@ private fun HasniTechDashboard() {
                             for (ring in 1..5) drawOval((if(ring%2==0) cyan else blue).copy(alpha=.55f/ring),Offset(cx-size.width*(.11f+ring*.035f),cy+size.height*.25f),androidx.compose.ui.geometry.Size(size.width*(.22f+ring*.07f),size.height*(.025f+ring*.009f)),style=androidx.compose.ui.graphics.drawscope.Stroke(width=1.1f))
                         }
                         HologramFigure(pulse,Modifier.fillMaxSize().padding(horizontal=22.dp, vertical=4.dp))
-                        Column(Modifier.align(Alignment.TopCenter).padding(top=9.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-                            Text("HASNITECH AI",color=cyan,fontSize=10.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp)
-                            Text("HOLOGRAPHIC CORE  •  LIVE",color=Silver.copy(alpha=.75f),fontSize=7.sp,letterSpacing=1.sp)
-                        }
-                        Column(Modifier.align(Alignment.BottomCenter).padding(bottom=9.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-                            Text("قوة التكنولوجيا بين يديك",color=Silver,fontSize=11.sp,fontWeight=FontWeight.Bold)
-                            Text("HOLOGRAM SIMULATION",color=cyan,fontSize=7.sp,letterSpacing=1.5.sp)
-                        }
                     }
                     Row(Modifier.fillMaxWidth().height(70.dp), horizontalArrangement=Arrangement.spacedBy(7.dp)) {
                         listOf(Triple(Icons.Rounded.Home,"الرئيسية",0),Triple(Icons.Rounded.Folder,"الملفات",3),Triple(Icons.Rounded.Apps,"التطبيقات",2),Triple(Icons.Rounded.Settings,"الإعدادات",4),Triple(Icons.Rounded.Build,"الأدوات",5)).forEach { item ->
@@ -414,9 +406,9 @@ private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val w=size.width; val h=size.height
         val cx=w*.5f; val cy=h*.46f
-        val cyan=Color(0xFF7CFBFF); val ice=Color(0xFFE9FFFF)
-        val blue=Color(0xFF3184FF); val violet=Color(0xFFB45CFF)
-        val pink=Color(0xFFFF4FCE)
+        val cyan=Color(0xFFFF2B4F); val ice=Color(0xFFFFE7EC)
+        val blue=Color(0xFF78122B); val violet=Color(0xFFFF1744)
+        val pink=Color(0xFFFF001E)
         val sw=(w*.0021f).coerceIn(.8f,1.8f)
         val radius=h*.285f
         // Entirely non-humanoid: a volumetric quantum hologram suspended in a projection chamber.
@@ -479,10 +471,10 @@ private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
             drawPath(cage,(if(i==1) violet else blue).copy(alpha=.63f),style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*1.25f))
         }
         // Jagged radial energy blades make the projection feel powerful and dangerous.
-        for(i in 0..23) {
-            val a=Math.toRadians((phase*(if(i%2==0) 1.15f else -.72f)+i*15f).toDouble())
-            val inner=radius*(1.22f+(i%3)*.04f)
-            val outer=radius*(1.48f+(i%4)*.11f)
+        for(i in 0..35) {
+            val a=Math.toRadians((phase*(if(i%2==0) 1.15f else -.72f)+i*10f).toDouble())
+            val inner=radius*(1.20f+(i%3)*.04f)
+            val outer=radius*(1.52f+(i%4)*.13f)
             val p1=Offset(cx+(kotlin.math.cos(a)*inner).toFloat(),cy+(kotlin.math.sin(a)*inner*.78f).toFloat())
             val p2=Offset(cx+(kotlin.math.cos(a)*outer).toFloat(),cy+(kotlin.math.sin(a)*outer*.78f).toFloat())
             drawLine(if(i%4==0) pink.copy(alpha=.92f*pulse) else cyan.copy(alpha=.72f),
@@ -490,7 +482,18 @@ private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
             if(i%3==0) drawCircle(ice.copy(alpha=.9f),w*.0038f,p2)
         }
         // Dense inner plasma nucleus and faceted energy lattice.
-        drawCircle(Brush.radialGradient(listOf(ice.copy(alpha=.96f*breathe),cyan.copy(alpha=.8f),blue.copy(alpha=.28f),Color.Transparent),Offset(cx,cy),radius*.78f),radius*.78f,Offset(cx,cy))
+        drawCircle(Brush.radialGradient(listOf(Color(0xFF020207),Color(0xFF18000A),pink.copy(alpha=.78f*breathe),Color(0xFF5C001A).copy(alpha=.6f),Color.Transparent),Offset(cx,cy),radius*.82f),radius*.82f,Offset(cx,cy))
+        // Black event horizon with a violently pulsing crimson corona.
+        drawCircle(Color(0xFF020106),radius*.30f,Offset(cx,cy))
+        drawCircle(Brush.radialGradient(listOf(Color(0xFF020106),Color(0xFF10000A),Color.Transparent),Offset(cx,cy),radius*.38f),radius*.38f,Offset(cx,cy))
+        for(i in 0..47) {
+            val a=Math.toRadians((phase*1.35f+i*7.5f).toDouble())
+            val r1=radius*(.34f+(i%4)*.025f)
+            val r2=radius*(.48f+(i%5)*.045f)
+            val p1=Offset(cx+(kotlin.math.cos(a)*r1).toFloat(),cy+(kotlin.math.sin(a)*r1*.86f).toFloat())
+            val p2=Offset(cx+(kotlin.math.cos(a+.045)*r2).toFloat(),cy+(kotlin.math.sin(a+.045)*r2*.86f).toFloat())
+            drawLine(if(i%4==0) ice.copy(alpha=.95f*breathe) else pink.copy(alpha=.88f),p1,p2,sw*(if(i%4==0) 2f else 1.1f))
+        }
         for(i in 0..11) {
             val a=Math.toRadians((phase*1.5f+i*30f).toDouble())
             val inner=radius*.20f
