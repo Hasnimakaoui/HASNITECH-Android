@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -345,6 +347,31 @@ private fun HasniTechDashboard() {
 private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, silver: Color, dim: Color, blue: Color) {
     var runtimeInstalled by remember { mutableStateOf(context.packageManager.getLaunchIntentForPackage("com.winlator") != null) }
     var runtimeMessage by remember { mutableStateOf(if (runtimeInstalled) "تم العثور على Winlator على الجهاز." else "لم يتم العثور على محرك Winlator مثبت.") }
+    var selectedExe by remember { mutableStateOf<android.net.Uri?>(null) }
+    var selectedExeName by remember { mutableStateOf("") }
+    val exePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            selectedExe = uri
+            selectedExeName = uri.lastPathSegment?.substringAfterLast('/')?.take(90) ?: "ملف Windows"
+            runtimeMessage = "تم اختيار الملف. افتح Winlator لاستيراده إلى حاوية Windows."
+        }
+    }
+    fun openRuntime() {
+        try {
+            val launchIntent = context.packageManager.getLaunchIntentForPackage("com.winlator")
+            if (launchIntent != null) {
+                context.startActivity(launchIntent)
+                runtimeInstalled = true
+                runtimeMessage = "تم فتح Winlator. إذا لم يظهر ملفك تلقائيًا، استورده من مدير الملفات داخل Winlator."
+            } else {
+                runtimeInstalled = false
+                runtimeMessage = "ثبّت Winlator من المصدر الرسمي ثم ارجع إلى HASNITECH."
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/brunodev85/winlator/releases")))
+            }
+        } catch (_: Exception) {
+            runtimeMessage = "تعذر فتح Winlator. تحقق من تثبيته."
+        }
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Rounded.Window, null, tint = cyan, modifier = Modifier.size(48.dp))
         Spacer(Modifier.height(10.dp))
@@ -357,42 +384,54 @@ private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, s
                 Spacer(Modifier.width(9.dp))
                 Column(Modifier.weight(1f)) {
                     Text(if (runtimeInstalled) "المحرك موجود" else "المحرك غير مثبت", color = silver, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text(runtimeMessage, color = dim, fontSize = 10.sp)
+                    Text(runtimeMessage, color = dim, fontSize = 10.sp, lineHeight = 15.sp)
                 }
             }
         }
         Spacer(Modifier.height(12.dp))
-        Text("HASNITECH يجهّز الوصول إلى محرك Windows. تشغيل EXE يتطلب محرك توافق فعليًا؛ لا يمكن تشغيله مباشرة بواسطة Android.", color = silver, fontSize = 11.sp, lineHeight = 17.sp)
-        Spacer(Modifier.height(14.dp))
-        Button(onClick = {
-            try {
-                val launchIntent = context.packageManager.getLaunchIntentForPackage("com.winlator")
-                if (launchIntent != null) {
-                    context.startActivity(launchIntent)
-                    runtimeInstalled = true
-                    runtimeMessage = "جارٍ فتح محرك Winlator."
-                } else {
-                    runtimeInstalled = false
-                    runtimeMessage = "افتح صفحة الإصدار الرسمي وثبّت APK يدويًا، ثم ارجع إلى HASNITECH."
-                    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/brunodev85/winlator/releases")))
+        Text("اختر ملف EXE أو MSI من الهاتف، ثم افتح محرك Windows. اختيار الملف لا يعني أن Winlator سيشغّله مباشرة؛ قد تحتاج إلى استيراده داخل الحاوية.", color = silver, fontSize = 11.sp, lineHeight = 17.sp)
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = { exePicker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Rounded.FolderOpen, null); Spacer(Modifier.width(7.dp)); Text(if (selectedExe == null) "اختيار برنامج Windows (EXE/MSI)" else "تغيير الملف المحدد")
+        }
+        if (selectedExe != null) {
+            Text("الملف المحدد: $selectedExeName", color = cyan, fontSize = 10.sp)
+            Button(onClick = {
+                try {
+                    val uri = selectedExe!!
+                    val view = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "application/octet-stream")
+                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        setPackage("com.winlator")
+                    }
+                    if (view.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(view)
+                    } else {
+                        openRuntime()
+                        runtimeMessage = "فتحنا Winlator. إذا لم يستقبل الملف تلقائيًا، افتح مدير الملفات داخل Winlator واستورد: $selectedExeName"
+                    }
+                } catch (_: Exception) {
+                    openRuntime()
+                    runtimeMessage = "تم فتح المحرك إن كان مثبتًا. استورد الملف المحدد من داخل Winlator إذا لم يفتح تلقائيًا."
                 }
-            } catch (e: Exception) {
-                runtimeMessage = "تعذر فتح المحرك أو صفحة التنزيل. تحقق من اتصال الإنترنت."
+            }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+                Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("فتح الملف عبر محرك Windows")
             }
-        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+        }
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = { openRuntime() }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
             Icon(if (runtimeInstalled) Icons.Rounded.PlayArrow else Icons.Rounded.Download, null); Spacer(Modifier.width(6.dp)); Text(if (runtimeInstalled) "تشغيل محرك Windows" else "تنزيل محرك Windows", fontSize = 11.sp)
         }
         OutlinedButton(onClick = {
             runtimeInstalled = context.packageManager.getLaunchIntentForPackage("com.winlator") != null
-            runtimeMessage = if (runtimeInstalled) "تم العثور على Winlator على الجهاز." else "لم يتم العثور على Winlator؛ ثبّته أولًا من صفحة الإصدار الرسمية."
+            runtimeMessage = if (runtimeInstalled) "تم العثور على Winlator على الجهاز." else "لم يتم العثور على Winlator؛ ثبّته من صفحة الإصدار الرسمية."
         }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(6.dp)); Text("إعادة فحص المحرك", fontSize = 11.sp)
+            Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(6.dp)); Text("إعادة فحص المحرك")
         }
         Spacer(Modifier.height(8.dp))
-        Text("تنبيه: لا نعلن عن دمج Wine/Box64 داخل APK حتى يُدمج المصدر والمكتبات الأصلية ويُختبر البناء. التوافق مع برامج Office والألعاب غير مضمون.", color = dim, fontSize = 9.sp, lineHeight = 14.sp)
+        Text("مهم: محرك Wine/Box64 الأصلي لم يُدمج داخل APK حتى الآن. هذه وصلة تشغيل واختيار ملف مع Winlator المثبت منفصلًا، وليست ضمانًا لتشغيل كل برامج Windows.", color = dim, fontSize = 9.sp, lineHeight = 14.sp)
     }
 }
-
 @Composable
 private fun AppInstallPanel(context: android.content.Context, cyan: Color, silver: Color, dim: Color, blue: Color) {
     var downloadUrl by remember { mutableStateOf("") }
