@@ -1,6 +1,7 @@
 package com.hasnitech.launcher
 
 import android.os.Bundle
+import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.RepeatMode
@@ -45,6 +46,7 @@ private val Panel = Color(0xCC0B1830)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         window.statusBarColor = android.graphics.Color.rgb(3, 6, 17)
         window.navigationBarColor = android.graphics.Color.rgb(3, 6, 17)
         setContent { HasniTechApp() }
@@ -219,39 +221,115 @@ private fun DragonMark(pulse: Float) {
 
 @Composable
 private fun HeroPanel(pulse: Float) {
-    Box(Modifier.fillMaxWidth().height(204.dp).shadow(18.dp, RoundedCornerShape(26.dp))
-        .clip(RoundedCornerShape(26.dp))
-        .background(Brush.linearGradient(listOf(Color(0xFF143F70), Color(0xFF0A1A34), Color(0xFF10142E))))
-        .border(1.dp, Brush.linearGradient(listOf(Ice.copy(alpha=.8f), Blue.copy(alpha=.35f), Color(0xFF28456A))), RoundedCornerShape(26.dp))) {
-        Canvas(Modifier.fillMaxSize()) {
-            val c=Offset(size.width*.83f,size.height*.48f)
-            drawCircle(Brush.radialGradient(listOf(Blue.copy(alpha=.34f*pulse), Color.Transparent), c, size.minDimension*.62f), size.minDimension*.62f,c)
-            drawCircle(Ice.copy(alpha=.14f), size.minDimension*.37f,c, style=androidx.compose.ui.graphics.drawscope.Stroke(width=1.2f))
-            drawCircle(Blue.copy(alpha=.25f), size.minDimension*.47f,c, style=androidx.compose.ui.graphics.drawscope.Stroke(width=1f))
-            drawLine(Ice.copy(alpha=.3f), Offset(size.width*.58f, size.height*.08f), Offset(size.width*.96f,size.height*.08f), 1f)
-        }
-        Column(Modifier.align(Alignment.CenterStart).fillMaxWidth(.76f).padding(start=20.dp, top=18.dp, bottom=18.dp)) {
-            Row(verticalAlignment=Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Bolt, null, tint=Ice, modifier=Modifier.size(16.dp))
-                Spacer(Modifier.width(5.dp))
-                Text("NEXT-GEN ANDROID DESKTOP", color=Ice, fontSize=8.sp, letterSpacing=1.3.sp)
+    Row(
+        Modifier.fillMaxWidth().height(250.dp)
+            .shadow(22.dp, RoundedCornerShape(26.dp))
+            .clip(RoundedCornerShape(26.dp))
+            .background(Brush.linearGradient(listOf(Color(0xFF071326), Color(0xFF101B3D), Color(0xFF071A2A))))
+            .border(1.dp, Ice.copy(alpha = .72f * pulse), RoundedCornerShape(26.dp))
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1.05f).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Bolt, null, tint = Ice, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("HASNI AI  /  LIVE HOLOGRAM", color = Ice, fontSize = 10.sp, letterSpacing = 1.4.sp)
             }
             Spacer(Modifier.height(12.dp))
-            Text("قوة الكمبيوتر. في جيبك.", color=Silver, fontSize=27.sp, fontWeight=FontWeight.Black, lineHeight=34.sp)
+            Text("بوابتك إلى المستقبل", color = Silver, fontSize = 27.sp, fontWeight = FontWeight.Black, lineHeight = 33.sp)
             Spacer(Modifier.height(8.dp))
-            Text("بوابتك إلى عالم HASNITECH", color=Color(0xFFB6CBE6), fontSize=12.sp)
-            Spacer(Modifier.height(13.dp))
-            Row(verticalAlignment=Alignment.CenterVertically) {
-                Box(Modifier.width(30.dp).height(3.dp).clip(CircleShape).background(Brush.horizontalGradient(listOf(Ice, Blue))))
-                Spacer(Modifier.width(7.dp))
-                Text("COSMIC CORE  /  01", color=Dim, fontSize=8.sp, letterSpacing=1.3.sp)
+            Text("واجهة هولوغرافية تفاعلية داخل HASNITECH", color = Color(0xFFB6CBE6), fontSize = 12.sp)
+            Spacer(Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.width(36.dp).height(3.dp).clip(CircleShape).background(Brush.horizontalGradient(listOf(Ice, Blue))))
+                Spacer(Modifier.width(8.dp))
+                Text("PROJECTION SIMULATION  •  ONLINE", color = Dim, fontSize = 8.sp, letterSpacing = 1.sp)
             }
         }
-        Icon(Icons.Rounded.AutoAwesome, null, tint=Ice.copy(alpha=.75f*pulse),
-            modifier=Modifier.align(Alignment.TopEnd).padding(17.dp).size(22.dp))
+        Box(Modifier.weight(.95f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+            HologramFigure(pulse, Modifier.fillMaxSize())
+        }
     }
 }
 
+@Composable
+private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
+    val scan by rememberInfiniteTransition(label = "holoScan").animateFloat(
+        initialValue = 0.08f, targetValue = 0.92f,
+        animationSpec = infiniteRepeatable(tween(2200), RepeatMode.Reverse),
+        label = "scanLine"
+    )
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        val cx = w * .52f
+        val cyan = Color(0xFF5CF6FF)
+        val blue = Color(0xFF238BFF)
+        val violet = Color(0xFF9A6BFF)
+        // Holographic emitter rings and ambient light.
+        drawCircle(Brush.radialGradient(listOf(blue.copy(alpha = .24f * pulse), violet.copy(alpha = .10f), Color.Transparent), Offset(cx, h * .55f), h * .57f), h * .57f, Offset(cx, h * .55f))
+        drawOval(cyan.copy(alpha = .55f * pulse), Offset(cx - w*.31f, h*.84f), androidx.compose.ui.geometry.Size(w*.62f, h*.075f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.4f))
+        drawOval(blue.copy(alpha = .45f), Offset(cx - w*.23f, h*.86f), androidx.compose.ui.geometry.Size(w*.46f, h*.045f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1f))
+        // Shoulders, neck and head are drawn as luminous vector contours, not a static image.
+        val shoulders = androidx.compose.ui.graphics.Path().apply {
+            moveTo(cx-w*.34f, h*.82f)
+            cubicTo(cx-w*.31f,h*.68f,cx-w*.19f,h*.68f,cx-w*.12f,h*.66f)
+            lineTo(cx-w*.09f,h*.57f)
+            cubicTo(cx-w*.18f,h*.49f,cx-w*.20f,h*.40f,cx-w*.18f,h*.30f)
+            cubicTo(cx-w*.15f,h*.10f,cx+w*.15f,h*.10f,cx+w*.18f,h*.30f)
+            cubicTo(cx+w*.20f,h*.40f,cx+w*.18f,h*.49f,cx+w*.09f,h*.57f)
+            lineTo(cx+w*.12f,h*.66f)
+            cubicTo(cx+w*.19f,h*.68f,cx+w*.31f,h*.68f,cx+w*.34f,h*.82f)
+        }
+        drawPath(shoulders, cyan.copy(alpha = .82f * pulse), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f))
+        val face = androidx.compose.ui.graphics.Path().apply {
+            moveTo(cx-w*.18f,h*.31f)
+            lineTo(cx-w*.15f,h*.22f)
+            lineTo(cx-w*.08f,h*.15f)
+            lineTo(cx+w*.08f,h*.15f)
+            lineTo(cx+w*.15f,h*.22f)
+            lineTo(cx+w*.18f,h*.31f)
+            lineTo(cx+w*.14f,h*.43f)
+            lineTo(cx+w*.07f,h*.49f)
+            lineTo(cx-w*.07f,h*.49f)
+            lineTo(cx-w*.14f,h*.43f)
+            close()
+        }
+        drawPath(face, Brush.verticalGradient(listOf(cyan.copy(alpha=.13f), blue.copy(alpha=.05f), violet.copy(alpha=.10f)), h*.14f, h*.51f))
+        drawPath(face, cyan.copy(alpha = .95f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.1f))
+        // Brow, cheek and jaw details create a mechanical android face.
+        drawLine(blue.copy(alpha=.9f), Offset(cx-w*.145f,h*.30f), Offset(cx-w*.055f,h*.285f), 2f)
+        drawLine(blue.copy(alpha=.9f), Offset(cx+w*.055f,h*.285f), Offset(cx+w*.145f,h*.30f), 2f)
+        drawLine(cyan.copy(alpha=.8f), Offset(cx-w*.12f,h*.40f), Offset(cx-w*.07f,h*.44f), 1.1f)
+        drawLine(cyan.copy(alpha=.8f), Offset(cx+w*.12f,h*.40f), Offset(cx+w*.07f,h*.44f), 1.1f)
+        // Glowing eyes with outer halos.
+        listOf(-1f, 1f).forEach { side ->
+            val eye = Offset(cx + side*w*.078f, h*.345f)
+            drawCircle(blue.copy(alpha=.35f*pulse), w*.055f, eye)
+            drawLine(cyan.copy(alpha=.95f), Offset(eye.x-w*.035f,eye.y), Offset(eye.x+w*.035f,eye.y), 3.2f, cap=StrokeCap.Round)
+            drawCircle(Color.White.copy(alpha=.8f), 1.5f, eye)
+        }
+        drawLine(violet.copy(alpha=.9f), Offset(cx,h*.36f), Offset(cx-w*.018f,h*.405f), 1.5f)
+        drawLine(cyan.copy(alpha=.9f), Offset(cx-w*.055f,h*.455f), Offset(cx+w*.055f,h*.455f), 1.4f)
+        // Fine scanlines and animated scanning beam make the hologram visibly alive.
+        var y = h*.16f
+        while (y < h*.84f) {
+            drawLine(cyan.copy(alpha=.075f), Offset(cx-w*.27f,y), Offset(cx+w*.27f,y), .8f)
+            y += 5.5f
+        }
+        val beamY = h * scan
+        drawLine(cyan.copy(alpha=.68f*pulse), Offset(w*.12f,beamY), Offset(w*.88f,beamY), 1.2f)
+        drawCircle(cyan.copy(alpha=.85f*pulse), 2.4f, Offset(w*.12f,beamY))
+        drawCircle(cyan.copy(alpha=.85f*pulse), 2.4f, Offset(w*.88f,beamY))
+        // Floating data particles.
+        for (i in 0..11) {
+            val px = w * (.12f + ((i * 37) % 76) / 100f)
+            val py = h * (.13f + ((i * 23) % 72) / 100f)
+            drawCircle(if (i % 3 == 0) violet.copy(alpha=.8f*pulse) else cyan.copy(alpha=.65f), if (i%3==0) 1.8f else 1.1f, Offset(px,py))
+        }
+    }
+}
 @Composable
 private fun MetricPanel(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector,
                         title: String, value: String, detail: String) {
