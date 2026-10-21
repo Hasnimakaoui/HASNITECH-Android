@@ -404,7 +404,7 @@ private fun AppInstallPanel(context: android.content.Context, cyan: Color, silve
                 .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setAllowedOverMetered(true)
                 .setAllowedOverRoaming(false)
-                .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "HASNITECH/$fileName")
+                .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "HASNITECH_$fileName")
             val manager = context.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager
             lastDownloadId = manager.enqueue(request)
             status = "بدأ التنزيل في الخلفية. ستصلك إشعارات عند اكتماله، والملف سيُحفظ في Downloads/HASNITECH."
