@@ -271,7 +271,15 @@ private fun HasniTechDashboard() {
                             drawCircle(Brush.radialGradient(listOf(cyan.copy(alpha=.12f*pulse),Color.Transparent),Offset(cx,cy),size.height*.65f),size.height*.65f,Offset(cx,cy))
                             for (ring in 1..5) drawOval((if(ring%2==0) cyan else blue).copy(alpha=.55f/ring),Offset(cx-size.width*(.11f+ring*.035f),cy+size.height*.25f),androidx.compose.ui.geometry.Size(size.width*(.22f+ring*.07f),size.height*(.025f+ring*.009f)),style=androidx.compose.ui.graphics.drawscope.Stroke(width=1.1f))
                         }
-                        HologramFigure(pulse,Modifier.fillMaxSize().padding(horizontal=22.dp, vertical=4.dp))
+                        when (page) {
+                            1 -> WindowsRuntimePanel(context, cyan, Silver, Dim, blue)
+                            2 -> AppInstallPanel(context, cyan, Silver, Dim, blue)
+                            3 -> SimpleDashboardPanel("مركز الملفات", "FILE EXPLORER", "افتح ملفات الهاتف أو اختر مُثبّت برنامج Windows لتجهيزه لاحقًا.", Icons.Rounded.FolderOpen, cyan, Silver, Dim)
+                            4 -> SimpleDashboardPanel("إعدادات HASNITECH", "SYSTEM SETTINGS", "إعدادات واجهة التطبيق والجهاز. محرك Windows يعمل عبر بيئة توافق منفصلة في هذه المرحلة.", Icons.Rounded.Settings, cyan, Silver, Dim)
+                            5 -> SimpleDashboardPanel("أدوات النظام", "SYSTEM TOOLS", "أدوات إدارة الملفات وتشغيل بيئة التوافق ستُضاف تدريجيًا.", Icons.Rounded.Build, cyan, Silver, Dim)
+                            6 -> SimpleDashboardPanel("مركز الدعم", "SUPPORT CENTER", "HASNITECH قيد التطوير. أبلغ عن البرنامج الذي تريد تجربته أولًا.", Icons.Rounded.HeadsetMic, cyan, Silver, Dim)
+                            else -> HologramFigure(pulse,Modifier.fillMaxSize().padding(horizontal=22.dp, vertical=4.dp))
+                        }
                     }
                     Row(Modifier.fillMaxWidth().height(70.dp), horizontalArrangement=Arrangement.spacedBy(7.dp)) {
                         listOf(Triple(Icons.Rounded.Home,"الرئيسية",0),Triple(Icons.Rounded.Folder,"الملفات",3),Triple(Icons.Rounded.Apps,"التطبيقات",2),Triple(Icons.Rounded.Settings,"الإعدادات",4),Triple(Icons.Rounded.Build,"الأدوات",5)).forEach { item ->
@@ -326,6 +334,75 @@ private fun HasniTechDashboard() {
                 }
             }
         }
+    }
+}
+
+
+@Composable
+private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, silver: Color, dim: Color, blue: Color) {
+    Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Rounded.Window, null, tint = cyan, modifier = Modifier.size(48.dp))
+        Spacer(Modifier.height(10.dp))
+        Text("WINDOWS RUNTIME", color = cyan, fontSize = 17.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+        Text("Wine  •  Box64  •  ARM64", color = silver, fontSize = 11.sp)
+        Spacer(Modifier.height(10.dp))
+        Text("محرك Windows لم يُدمج داخل HASNITECH بعد. في هذه المرحلة يمكنك فتح Winlator إذا كان مثبتًا، وهو محرك توافق خارجي لتشغيل بعض برامج Windows.", color = silver, fontSize = 10.sp, lineHeight = 16.sp)
+        Spacer(Modifier.height(14.dp))
+        Button(onClick = {
+            val intent = context.packageManager.getLaunchIntentForPackage("com.winlator")
+            try {
+                if (intent != null) context.startActivity(intent)
+                else context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/brunodev85/winlator/releases")))
+            } catch (_: Exception) { }
+        }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+            Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("فتح Winlator / تنزيله", fontSize = 11.sp)
+        }
+        Spacer(Modifier.height(6.dp))
+        Text("تشغيل Office غير مضمون؛ يعتمد على إصدار البرنامج والتوافق والترخيص.", color = dim, fontSize = 9.sp)
+    }
+}
+
+@Composable
+private fun AppInstallPanel(context: android.content.Context, cyan: Color, silver: Color, dim: Color, blue: Color) {
+    val apkPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val installIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(installIntent)
+            } catch (_: Exception) {
+                try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) } catch (_: Exception) { }
+            }
+        }
+    }
+    Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Rounded.Apps, null, tint = cyan, modifier = Modifier.size(44.dp))
+        Spacer(Modifier.height(8.dp))
+        Text("APPLICATION CENTER", color = cyan, fontSize = 16.sp, fontWeight = FontWeight.Black)
+        Text("تثبيت تطبيقات Android بصيغة APK", color = silver, fontSize = 11.sp)
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = { apkPicker.launch(arrayOf("application/vnd.android.package-archive", "application/octet-stream")) },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+            Icon(Icons.Rounded.FileOpen, null); Spacer(Modifier.width(6.dp)); Text("اختيار ملف APK", fontSize = 11.sp)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("هذا الزر يفتح مُثبّت Android لتطبيقات APK فقط. ملفات EXE تحتاج محرك Windows مثل Wine/Box64.", color = dim, fontSize = 9.sp, lineHeight = 14.sp)
+    }
+}
+
+@Composable
+private fun SimpleDashboardPanel(title: String, subtitle: String, description: String, icon: androidx.compose.ui.graphics.vector.ImageVector, cyan: Color, silver: Color, dim: Color) {
+    Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, null, tint = cyan, modifier = Modifier.size(42.dp))
+        Spacer(Modifier.height(10.dp))
+        Text(title, color = cyan, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Text(subtitle, color = dim, fontSize = 9.sp, letterSpacing = 1.4.sp)
+        Spacer(Modifier.height(12.dp))
+        Text(description, color = silver, fontSize = 11.sp, lineHeight = 17.sp)
     }
 }
 
