@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         window.statusBarColor = android.graphics.Color.rgb(3, 6, 17)
         window.navigationBarColor = android.graphics.Color.rgb(3, 6, 17)
-        setContent { HasniTechApp() }
+        setContent { HasniTechDashboard() }
     }
 }
 
@@ -186,6 +186,148 @@ fun HasniTechApp() {
                         Text("HASNITECH  •  COSMIC DESKTOP", color=Dim, fontSize=8.sp, letterSpacing=1.5.sp)
                         Spacer(Modifier.width(8.dp))
                         Box(Modifier.width(22.dp).height(1.dp).background(Blue))
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun HasniTechDashboard() {
+    var page by remember { mutableIntStateOf(0) }
+    var showWindowsInfo by remember { mutableStateOf(false) }
+    val pulseTransition = rememberInfiniteTransition(label = "dashboardPulse")
+    val pulse by pulseTransition.animateFloat(0.65f, 1f, infiniteRepeatable(tween(1400), RepeatMode.Reverse), label = "dashboardGlow")
+    val cyan = Color(0xFF38EFFF)
+    val blue = Color(0xFF126CFF)
+    val panel = Color(0xE9081022)
+    MaterialTheme(colorScheme = darkColorScheme(background = Void, surface = Navy, primary = cyan, onSurface = Silver)) {
+        Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF020510), Color(0xFF071B3A), Color(0xFF08051B))))) {
+            Canvas(Modifier.fillMaxSize()) {
+                for (i in 0..90) {
+                    val x = size.width * (((i * 73) % 997) / 997f)
+                    val y = size.height * (((i * 137) % 991) / 991f)
+                    drawCircle(cyan.copy(alpha = if (i % 5 == 0) .7f * pulse else .2f), if (i % 7 == 0) 1.8f else .8f, Offset(x,y))
+                }
+                drawCircle(Brush.radialGradient(listOf(blue.copy(alpha=.19f), Color.Transparent), Offset(size.width*.53f,size.height*.52f), size.height*.8f), size.height*.8f, Offset(size.width*.53f,size.height*.52f))
+            }
+            Row(Modifier.fillMaxSize().padding(10.dp), horizontalArrangement=Arrangement.spacedBy(9.dp)) {
+                // Fixed left navigation rail, matching the reference dashboard.
+                Column(Modifier.width(158.dp).fillMaxHeight().clip(RoundedCornerShape(16.dp))
+                    .background(panel).border(1.dp, cyan.copy(alpha=.45f), RoundedCornerShape(16.dp)).padding(8.dp),
+                    verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                    Row(verticalAlignment=Alignment.CenterVertically, modifier=Modifier.padding(vertical=8.dp, horizontal=3.dp)) {
+                        DragonMark(pulse)
+                        Spacer(Modifier.width(6.dp))
+                        Column {
+                            Text("HASNITECH", color=cyan, fontWeight=FontWeight.Black, fontSize=13.sp, maxLines=1)
+                            Text("WINDOWS IN POCKET", color=Silver, fontSize=6.sp, maxLines=1)
+                        }
+                    }
+                    HorizontalDivider(color=cyan.copy(alpha=.3f))
+                    listOf(Triple(Icons.Rounded.Home,"الرئيسية",0),Triple(Icons.Rounded.Window,"تشغيل Windows",1),Triple(Icons.Rounded.Apps,"التطبيقات",2),Triple(Icons.Rounded.Folder,"الملفات",3),Triple(Icons.Rounded.Settings,"الإعدادات",4),Triple(Icons.Rounded.Build,"الأدوات",5),Triple(Icons.Rounded.HeadsetMic,"الدعم",6)).forEach { item ->
+                        Surface(onClick={page=item.third}, color=if(page==item.third) Color(0xFF103A67) else Color.Transparent,
+                            shape=RoundedCornerShape(9.dp), border=androidx.compose.foundation.BorderStroke(1.dp,if(page==item.third) cyan.copy(alpha=.8f) else Color.Transparent),
+                            modifier=Modifier.fillMaxWidth().weight(1f)) {
+                            Row(Modifier.fillMaxWidth().padding(horizontal=8.dp), verticalAlignment=Alignment.CenterVertically) {
+                                Icon(item.first,null,tint=if(page==item.third) cyan else Color(0xFF77A8E8), modifier=Modifier.size(19.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(item.second,color=Silver,fontSize=10.sp,maxLines=1)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Surface(color=Color(0xFF101B40), shape=RoundedCornerShape(9.dp), modifier=Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(8.dp)) {
+                            Icon(Icons.Rounded.SportsEsports,null,tint=Color(0xFF9B7BFF),modifier=Modifier.size(22.dp))
+                            Text("وضع الألعاب",color=Silver,fontSize=10.sp)
+                            Text("OFF",color=cyan,fontSize=9.sp)
+                        }
+                    }
+                }
+                // Main holographic stage.
+                Column(Modifier.weight(1.35f).fillMaxHeight(), verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment=Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("HASNITECH  /  CONTROL CENTER", color=cyan, fontSize=11.sp, fontWeight=FontWeight.Bold, letterSpacing=1.2.sp)
+                            Text(when(page){1->"WINDOWS ENVIRONMENT";2->"APPLICATION LIBRARY";3->"FILE CENTER";4->"SYSTEM SETTINGS";5->"SYSTEM TOOLS";6->"SUPPORT CENTER";else->"قوة التكنولوجيا بين يديك"}, color=Silver, fontSize=9.sp)
+                        }
+                        Surface(color=Color(0xFF092E2B), shape=CircleShape, border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF27D9C0))) {
+                            Row(Modifier.padding(horizontal=9.dp,vertical=5.dp), verticalAlignment=Alignment.CenterVertically) {
+                                Box(Modifier.size(6.dp).background(Color(0xFF37FFD1),CircleShape)); Spacer(Modifier.width(5.dp))
+                                Text("SYSTEM ONLINE",color=Color(0xFF62FFDC),fontSize=8.sp)
+                            }
+                        }
+                    }
+                    Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                        .background(Brush.radialGradient(listOf(Color(0xFF102C66),Color(0xFF080F2A),Color(0xFF030713))))
+                        .border(1.dp,cyan.copy(alpha=.6f*pulse),RoundedCornerShape(16.dp))) {
+                        Canvas(Modifier.fillMaxSize()) {
+                            val cx=size.width*.5f; val cy=size.height*.52f
+                            drawCircle(Brush.radialGradient(listOf(cyan.copy(alpha=.12f*pulse),Color.Transparent),Offset(cx,cy),size.height*.65f),size.height*.65f,Offset(cx,cy))
+                            for (ring in 1..5) drawOval((if(ring%2==0) cyan else blue).copy(alpha=.55f/ring),Offset(cx-size.width*(.11f+ring*.035f),cy+size.height*.25f),androidx.compose.ui.geometry.Size(size.width*(.22f+ring*.07f),size.height*(.025f+ring*.009f)),style=androidx.compose.ui.graphics.drawscope.Stroke(width=1.1f))
+                        }
+                        HologramFigure(pulse,Modifier.fillMaxSize().padding(horizontal=22.dp, vertical=4.dp))
+                        Column(Modifier.align(Alignment.TopCenter).padding(top=9.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+                            Text("HASNITECH AI",color=cyan,fontSize=10.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp)
+                            Text("HOLOGRAPHIC CORE  •  LIVE",color=Silver.copy(alpha=.75f),fontSize=7.sp,letterSpacing=1.sp)
+                        }
+                        Column(Modifier.align(Alignment.BottomCenter).padding(bottom=9.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+                            Text("قوة التكنولوجيا بين يديك",color=Silver,fontSize=11.sp,fontWeight=FontWeight.Bold)
+                            Text("HOLOGRAM SIMULATION",color=cyan,fontSize=7.sp,letterSpacing=1.5.sp)
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth().height(70.dp), horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                        listOf(Triple(Icons.Rounded.Home,"الرئيسية",0),Triple(Icons.Rounded.Folder,"الملفات",3),Triple(Icons.Rounded.Apps,"التطبيقات",2),Triple(Icons.Rounded.Settings,"الإعدادات",4),Triple(Icons.Rounded.Build,"الأدوات",5)).forEach { item ->
+                            Surface(onClick={page=item.third}, modifier=Modifier.weight(1f).fillMaxHeight(),
+                                color=Color(0xD90A1730),shape=RoundedCornerShape(11.dp),
+                                border=androidx.compose.foundation.BorderStroke(1.dp,cyan.copy(alpha=.25f))) {
+                                Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+                                    Icon(item.first,null,tint=cyan,modifier=Modifier.size(20.dp))
+                                    Spacer(Modifier.height(4.dp)); Text(item.second,color=Silver,fontSize=9.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+                // Right-side device status and launchable shortcuts.
+                Column(Modifier.width(235.dp).fillMaxHeight(), verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(panel).border(1.dp,cyan.copy(alpha=.4f),RoundedCornerShape(14.dp)).padding(11.dp)) {
+                        Text("الجهاز والنظام",color=cyan,fontSize=12.sp,fontWeight=FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                        listOf("POCO X4 Pro 5G","Snapdragon 695","RAM 8 GB","Android 13").forEach { Text("▣  $it",color=Silver,fontSize=9.sp,modifier=Modifier.padding(vertical=2.dp)) }
+                        Spacer(Modifier.height(6.dp)); HorizontalDivider(color=cyan.copy(alpha=.25f)); Spacer(Modifier.height(6.dp))
+                        Row(verticalAlignment=Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.BatteryChargingFull,null,tint=Color(0xFF3FFFC8),modifier=Modifier.size(20.dp))
+                            Text("  جهاز محمول",color=Color(0xFF3FFFC8),fontSize=10.sp)
+                        }
+                    }
+                    Column(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(panel).border(1.dp,cyan.copy(alpha=.35f),RoundedCornerShape(14.dp)).padding(9.dp)) {
+                        Text(if(page==2) "مكتبة التطبيقات" else "التطبيقات السريعة",color=cyan,fontSize=12.sp,fontWeight=FontWeight.Bold)
+                        Spacer(Modifier.height(7.dp))
+                        val apps=listOf(Triple(Icons.Rounded.Language,"Chrome","Browser"),Triple(Icons.Rounded.PlayArrow,"YouTube","Media"),Triple(Icons.Rounded.Chat,"WhatsApp","Messages"),Triple(Icons.Rounded.Gamepad,"Games","Gaming"),Triple(Icons.Rounded.Description,"Office","Documents"),Triple(Icons.Rounded.Photo,"Photos","Gallery"))
+                        apps.forEach { app ->
+                            Surface(onClick={ if(app.second=="Chrome") { val intent=android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse("https://www.google.com")); try { /* Launch external browser */ } catch (_:Exception) {} ; showWindowsInfo=true } else showWindowsInfo=true },
+                                color=Color(0xFF0B1B36),shape=RoundedCornerShape(9.dp),border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF173D6B)),
+                                modifier=Modifier.fillMaxWidth().weight(1f).padding(vertical=2.dp)) {
+                                Row(Modifier.padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically) {
+                                    Icon(app.first,null,tint=if(app.second=="Games") Color(0xFFAA83FF) else cyan,modifier=Modifier.size(21.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Column { Text(app.second,color=Silver,fontSize=10.sp,fontWeight=FontWeight.Bold); Text(app.third,color=Dim,fontSize=7.sp) }
+                                    Spacer(Modifier.weight(1f)); Icon(Icons.Rounded.ChevronRight,null,tint=Dim,modifier=Modifier.size(15.dp))
+                                }
+                            }
+                        }
+                    }
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(panel).border(1.dp,Color(0xFF4D3D99),RoundedCornerShape(13.dp)).padding(9.dp)) {
+                        Row(verticalAlignment=Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Memory,null,tint=Color(0xFFB19AFF),modifier=Modifier.size(22.dp))
+                            Spacer(Modifier.width(7.dp))
+                            Column { Text("مساعد HASNI AI",color=Silver,fontSize=10.sp,fontWeight=FontWeight.Bold); Text("محرك Windows غير مدمج بعد",color=Dim,fontSize=7.sp) }
+                        }
+                        if(showWindowsInfo) { Spacer(Modifier.height(6.dp)); Text("هذه واجهة اختصارات. يلزم ربط كل تطبيق بمحركه أو تطبيق مثبت لتشغيله فعليًا.",color=Silver,fontSize=8.sp) }
                     }
                 }
             }
