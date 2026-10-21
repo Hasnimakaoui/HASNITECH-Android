@@ -399,13 +399,92 @@ private fun AppInstallPanel(context: android.content.Context, cyan: Color, silve
 
 @Composable
 private fun SimpleDashboardPanel(title: String, subtitle: String, description: String, icon: androidx.compose.ui.graphics.vector.ImageVector, cyan: Color, silver: Color, dim: Color) {
-    Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(icon, null, tint = cyan, modifier = Modifier.size(42.dp))
-        Spacer(Modifier.height(10.dp))
+    val context = LocalContext.current
+    var chosenFile by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf("جاهز") }
+    var notifications by remember { mutableStateOf(true) }
+    var animations by remember { mutableStateOf(true) }
+    var gameMode by remember { mutableStateOf(false) }
+    val prefs = remember { context.getSharedPreferences("hasnitech_settings", android.content.Context.MODE_PRIVATE) }
+    LaunchedEffect(Unit) {
+        notifications = prefs.getBoolean("notifications", true)
+        animations = prefs.getBoolean("animations", true)
+        gameMode = prefs.getBoolean("game_mode", false)
+    }
+    val filePicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            chosenFile = uri.lastPathSegment?.substringAfterLast('/') ?: uri.toString()
+            status = "تم اختيار الملف"
+            try { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) { }
+            try {
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, context.contentResolver.getType(uri) ?: "*/*")
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                })
+            } catch (_: Exception) { status = "تم اختيار الملف؛ لا يوجد تطبيق لفتحه" }
+        }
+    }
+    fun launch(intent: android.content.Intent, success: String) {
+        try { context.startActivity(intent); status = success } catch (_: Exception) { status = "تعذر تنفيذ الإجراء على هذا الجهاز" }
+    }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, null, tint = cyan, modifier = Modifier.size(38.dp))
         Text(title, color = cyan, fontSize = 17.sp, fontWeight = FontWeight.Bold)
         Text(subtitle, color = dim, fontSize = 9.sp, letterSpacing = 1.4.sp)
-        Spacer(Modifier.height(12.dp))
         Text(description, color = silver, fontSize = 11.sp, lineHeight = 17.sp)
+        when {
+            title.contains("الملفات") -> {
+                Button(onClick = { filePicker.launch(arrayOf("*/*")) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+                    Icon(Icons.Rounded.FolderOpen, null); Spacer(Modifier.width(7.dp)); Text("استعراض ملفات الهاتف")
+                }
+                if (chosenFile.isNotBlank()) Text("الملف المحدد: $chosenFile", color = silver, fontSize = 10.sp)
+                Button(onClick = { launch(android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT_TREE), "تم فتح مدير المجلدات") }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF102442), contentColor = cyan)) {
+                    Icon(Icons.Rounded.Folder, null); Spacer(Modifier.width(7.dp)); Text("اختيار مجلد")
+                }
+            }
+            title.contains("الإعدادات") -> {
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF0B1B36)).padding(horizontal=10.dp, vertical=5.dp), verticalAlignment=Alignment.CenterVertically) {
+                    Text("التنبيهات", color=silver, modifier=Modifier.weight(1f), fontSize=11.sp)
+                    Switch(checked=notifications, onCheckedChange={ notifications=it; prefs.edit().putBoolean("notifications",it).apply(); status="تم حفظ إعداد التنبيهات" })
+                }
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF0B1B36)).padding(horizontal=10.dp, vertical=5.dp), verticalAlignment=Alignment.CenterVertically) {
+                    Text("المؤثرات المتحركة", color=silver, modifier=Modifier.weight(1f), fontSize=11.sp)
+                    Switch(checked=animations, onCheckedChange={ animations=it; prefs.edit().putBoolean("animations",it).apply(); status="تم حفظ إعداد المؤثرات" })
+                }
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF0B1B36)).padding(horizontal=10.dp, vertical=5.dp), verticalAlignment=Alignment.CenterVertically) {
+                    Text("وضع الألعاب", color=silver, modifier=Modifier.weight(1f), fontSize=11.sp)
+                    Switch(checked=gameMode, onCheckedChange={ gameMode=it; prefs.edit().putBoolean("game_mode",it).apply(); status=if(it) "وضع الألعاب مفعّل" else "وضع الألعاب متوقف" })
+                }
+                Button(onClick = { launch(android.content.Intent(android.provider.Settings.ACTION_SETTINGS), "تم فتح إعدادات Android") }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+                    Icon(Icons.Rounded.Settings, null); Spacer(Modifier.width(7.dp)); Text("إعدادات الجهاز")
+                }
+            }
+            title.contains("أدوات") -> {
+                Button(onClick = { launch(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + context.packageName)), "تم فتح معلومات HASNITECH") }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+                    Icon(Icons.Rounded.Info, null); Spacer(Modifier.width(7.dp)); Text("معلومات التطبيق والأذونات")
+                }
+                Button(onClick = { launch(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/brunodev85/winlator/releases")), "تم فتح صفحة إصدارات Winlator") }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF102442), contentColor = cyan)) {
+                    Icon(Icons.Rounded.OpenInBrowser, null); Spacer(Modifier.width(7.dp)); Text("صفحة محرك Windows")
+                }
+                Button(onClick = { launch(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://support.google.com/android/answer/9431959")), "تم فتح مساعدة Android") }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF102442), contentColor = cyan)) {
+                    Icon(Icons.Rounded.Build, null); Spacer(Modifier.width(7.dp)); Text("مساعدة إدارة التطبيقات")
+                }
+            }
+            title.contains("الدعم") -> {
+                Button(onClick = { launch(android.content.Intent(android.content.Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:?subject=" + android.net.Uri.encode("دعم HASNITECH") + "&body=" + android.net.Uri.encode("إصدار Android: " + android.os.Build.VERSION.RELEASE + "\nالجهاز: " + android.os.Build.MODEL + "\nالمشكلة: "))), "تم فتح تطبيق البريد لإرسال تقرير") }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+                    Icon(Icons.Rounded.Email, null); Spacer(Modifier.width(7.dp)); Text("إرسال تقرير دعم بالبريد")
+                }
+                Button(onClick = { launch(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/Hasnimakaoui/HASNITECH-Android/issues")), "تم فتح صفحة البلاغات") }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF102442), contentColor = cyan)) {
+                    Icon(Icons.Rounded.BugReport, null); Spacer(Modifier.width(7.dp)); Text("الإبلاغ عن مشكلة")
+                }
+            }
+        }
+        Surface(color=Color(0xFF092E2B), shape=RoundedCornerShape(50), border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF236B78))) {
+            Text(status, color=Color(0xFF62FFDC), fontSize=10.sp, modifier=Modifier.padding(horizontal=12.dp, vertical=6.dp))
+        }
     }
 }
 
