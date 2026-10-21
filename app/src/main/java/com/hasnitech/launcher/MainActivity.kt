@@ -3,129 +3,282 @@ package com.hasnitech.launcher
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Background = Color(0xFF070B14)
-private val Panel = Color(0xFF111827)
-private val Cyan = Color(0xFF35E0D0)
-private val Muted = Color(0xFF8B9BB4)
+private val Void = Color(0xFF030611)
+private val Navy = Color(0xFF08152A)
+private val Ice = Color(0xFF66F4FF)
+private val Blue = Color(0xFF278BFF)
+private val Silver = Color(0xFFDCE8F7)
+private val Dim = Color(0xFF8194B4)
+private val Panel = Color(0xCC0B1830)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.statusBarColor = android.graphics.Color.rgb(3, 6, 17)
+        window.navigationBarColor = android.graphics.Color.rgb(3, 6, 17)
         setContent { HasniTechApp() }
     }
 }
 
 @Composable
 fun HasniTechApp() {
-    var selected by remember { mutableStateOf(0) }
+    var selected by remember { mutableIntStateOf(0) }
+    val transition = rememberInfiniteTransition(label = "cosmic")
+    val pulse by transition.animateFloat(
+        initialValue = 0.55f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1800), RepeatMode.Reverse),
+        label = "pulse"
+    )
     MaterialTheme(colorScheme = darkColorScheme(
-        background = Background, surface = Panel, primary = Cyan,
-        onBackground = Color.White, onSurface = Color.White
+        background = Void, surface = Navy, primary = Ice,
+        onBackground = Silver, onSurface = Silver
     )) {
         Scaffold(
-            containerColor = Background,
+            containerColor = Void,
             bottomBar = {
-                NavigationBar(containerColor = Color(0xFF0C1220), contentColor = Cyan) {
-                    listOf(Icons.Rounded.Home to "الرئيسية",
-                        Icons.Rounded.Apps to "برامجي",
-                        Icons.Rounded.Settings to "الإعدادات").forEachIndexed { index, item ->
+                NavigationBar(
+                    containerColor = Color(0xFF071020),
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.border(1.dp, Color(0xFF193557))
+                ) {
+                    val items = listOf(
+                        Triple(Icons.Rounded.Home, "الرئيسية", 0),
+                        Triple(Icons.Rounded.Apps, "مكتبة البرامج", 1),
+                        Triple(Icons.Rounded.Tune, "النظام", 2)
+                    )
+                    items.forEach { item ->
                         NavigationBarItem(
-                            selected = selected == index,
-                            onClick = { selected = index },
-                            icon = { Icon(item.first, contentDescription = item.second) },
-                            label = { Text(item.second) },
+                            selected = selected == item.third,
+                            onClick = { selected = item.third },
+                            icon = { Icon(item.first, null, modifier = Modifier.size(22.dp)) },
+                            label = { Text(item.second, fontSize = 10.sp, maxLines = 1) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Cyan, selectedTextColor = Cyan,
-                                indicatorColor = Color(0xFF18343B),
-                                unselectedIconColor = Muted, unselectedTextColor = Muted
+                                selectedIconColor = Ice, selectedTextColor = Ice,
+                                indicatorColor = Color(0xFF153354),
+                                unselectedIconColor = Dim, unselectedTextColor = Dim
                             )
                         )
                     }
                 }
             }
-        ) { padding ->
-            Column(
-                Modifier.fillMaxSize().padding(padding)
-                    .background(Brush.verticalGradient(listOf(Color(0xFF101D31), Background)))
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(48.dp).background(Cyan.copy(alpha=.13f), RoundedCornerShape(15.dp)),
-                        contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Memory, null, tint = Cyan, modifier = Modifier.size(29.dp))
+        ) { inset ->
+            Box(Modifier.fillMaxSize().padding(inset).background(
+                Brush.verticalGradient(listOf(Color(0xFF0B1C39), Void, Color(0xFF050916)))
+            )) {
+                Canvas(Modifier.fillMaxSize().alpha(0.45f)) {
+                    val stars = listOf(
+                        Offset(size.width*.08f,size.height*.10f), Offset(size.width*.88f,size.height*.08f),
+                        Offset(size.width*.72f,size.height*.23f), Offset(size.width*.13f,size.height*.38f),
+                        Offset(size.width*.91f,size.height*.48f), Offset(size.width*.22f,size.height*.66f),
+                        Offset(size.width*.80f,size.height*.78f), Offset(size.width*.09f,size.height*.88f)
+                    )
+                    stars.forEachIndexed { i, p ->
+                        drawCircle(Ice.copy(alpha = if (i % 2 == 0) pulse else .35f), radius = if(i%3==0) 2.2f else 1.2f, center = p)
                     }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("HASNI", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Black)
-                        Text("TECH  /  WINDOWS ENVIRONMENT", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp)
-                    }
-                    Icon(Icons.Rounded.NotificationsNone, null, tint = Muted, modifier = Modifier.size(26.dp))
+                    drawCircle(Brush.radialGradient(listOf(Blue.copy(alpha=.13f), Color.Transparent), center=Offset(size.width*.82f,size.height*.20f), radius=size.width*.52f),
+                        radius=size.width*.52f, center=Offset(size.width*.82f,size.height*.20f))
                 }
-                Column(Modifier.fillMaxWidth().background(
-                    Brush.linearGradient(listOf(Color(0xFF163D4A), Color(0xFF172039))),
-                    RoundedCornerShape(24.dp)).padding(22.dp)) {
-                    Text("بيئة تشغيلك الذكية", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(8.dp))
-                    Text("مركزك لإدارة تطبيقاتك وتجهيز بيئة Windows على Android.", color = Color(0xFFB7C8D8), fontSize = 14.sp)
-                    Spacer(Modifier.height(20.dp))
+                Column(
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=18.dp, vertical=16.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.PhoneAndroid, null, tint = Cyan)
-                        Spacer(Modifier.width(8.dp))
-                        Text("POCO X4 Pro 5G", color = Cyan, fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.weight(1f))
-                        Surface(color = Color(0xFF253B3D), shape = RoundedCornerShape(50)) {
-                            Text("ANDROID", color = Cyan, fontSize = 10.sp, modifier = Modifier.padding(horizontal=10.dp, vertical=6.dp))
+                        DragonMark(pulse)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("HASNI", fontSize=27.sp, fontWeight=FontWeight.Black,
+                                color=Silver, letterSpacing=3.sp, lineHeight=28.sp)
+                            Text("T E C H   /   N E X T   G E N", fontSize=9.sp, color=Ice, letterSpacing=1.1.sp)
+                        }
+                        Box(Modifier.size(42.dp).clip(CircleShape).background(Color(0xFF0C1D36))
+                            .border(1.dp, Color(0xFF244D78), CircleShape), contentAlignment=Alignment.Center) {
+                            Icon(Icons.Rounded.NotificationsNone, null, tint=Silver, modifier=Modifier.size(21.dp))
                         }
                     }
-                }
-                Text(if (selected == 1) "مكتبة البرامج" else if (selected == 2) "إعدادات النظام" else "لوحة التحكم",
-                    color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatusCard(Modifier.weight(1f), Icons.Rounded.Apps, "البرامج", "0", "بانتظار الإضافة")
-                    StatusCard(Modifier.weight(1f), Icons.Rounded.Memory, "المحرك", "غير مدمج", "Wine / Box64")
-                }
-                Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(20.dp)).padding(18.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.TipsAndUpdates, null, tint = Cyan)
-                        Spacer(Modifier.width(10.dp))
-                        Text("الخطوة التالية", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    HeroPanel(pulse)
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(when(selected) { 1 -> "مكتبة البرامج"; 2 -> "مركز النظام"; else -> "مركز القيادة" },
+                                color=Silver, fontSize=20.sp, fontWeight=FontWeight.Bold)
+                            Text("CONTROL  /  OVERVIEW", color=Dim, fontSize=9.sp, letterSpacing=1.6.sp)
+                        }
+                        Surface(color=Color(0xFF102B37), shape=RoundedCornerShape(50),
+                            border=androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF236B78))) {
+                            Row(Modifier.padding(horizontal=10.dp, vertical=6.dp), verticalAlignment=Alignment.CenterVertically) {
+                                Box(Modifier.size(6.dp).background(Ice, CircleShape))
+                                Spacer(Modifier.width(6.dp))
+                                Text("SYSTEM READY", color=Ice, fontSize=9.sp, fontWeight=FontWeight.Bold)
+                            }
+                        }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Text("هذه نسخة أولية قابلة للبناء. لم يتم دمج محرك Windows بعد، ولن تعمل ملفات EXE قبل إضافة المحرك وتجربته.", color = Muted, fontSize = 13.sp, lineHeight = 20.sp)
+                    Row(horizontalArrangement=Arrangement.spacedBy(11.dp)) {
+                        MetricPanel(Modifier.weight(1f), Icons.Rounded.Apps, "التطبيقات", "00", "مكتبة البرامج")
+                        MetricPanel(Modifier.weight(1f), Icons.Rounded.Memory, "محرك Windows", "قيد التجهيز", "Wine  /  Box64")
+                    }
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+                        .background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp)).padding(16.dp)) {
+                        Row(verticalAlignment=Alignment.CenterVertically) {
+                            Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
+                                .background(Brush.linearGradient(listOf(Blue.copy(alpha=.35f), Ice.copy(alpha=.12f)))),
+                                contentAlignment=Alignment.Center) {
+                                Icon(Icons.Rounded.Memory, null, tint=Ice)
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("بيئة التشغيل", color=Silver, fontWeight=FontWeight.Bold, fontSize=16.sp)
+                                Text("WINDOWS COMPATIBILITY LAYER", color=Dim, fontSize=8.sp, letterSpacing=1.sp)
+                            }
+                            Icon(Icons.Rounded.ChevronRight, null, tint=Ice)
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        Text("الأساس جاهز. محرك تشغيل ملفات EXE لم يُدمج بعد.", color=Silver, fontSize=13.sp, lineHeight=20.sp)
+                        Spacer(Modifier.height(12.dp))
+                        Row(verticalAlignment=Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.PhoneAndroid, null, tint=Ice, modifier=Modifier.size(17.dp))
+                            Spacer(Modifier.width(7.dp))
+                            Text("POCO X4 PRO 5G", color=Ice, fontSize=10.sp, fontWeight=FontWeight.Bold, letterSpacing=1.sp)
+                            Spacer(Modifier.weight(1f))
+                            Text("ANDROID 13", color=Dim, fontSize=9.sp)
+                        }
+                    }
+                    Text("QUICK ACCESS", color=Dim, fontSize=10.sp, letterSpacing=2.sp, fontWeight=FontWeight.Bold)
+                    Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                        QuickTile(Modifier.weight(1f), Icons.Rounded.FolderOpen, "ملفاتي", "FILE MANAGER")
+                        QuickTile(Modifier.weight(1f), Icons.Rounded.Terminal, "طرفية النظام", "SYSTEM TOOLS")
+                        QuickTile(Modifier.weight(1f), Icons.Rounded.Settings, "الإعدادات", "PREFERENCES")
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.Center, verticalAlignment=Alignment.CenterVertically) {
+                        Box(Modifier.width(22.dp).height(1.dp).background(Blue))
+                        Spacer(Modifier.width(8.dp))
+                        Text("HASNITECH  •  COSMIC DESKTOP", color=Dim, fontSize=8.sp, letterSpacing=1.5.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Box(Modifier.width(22.dp).height(1.dp).background(Blue))
+                    }
                 }
-                Spacer(Modifier.weight(1f))
-                Text("HASNITECH • BUILD 1.0 • PREVIEW", color = Color(0xFF506078), fontSize = 10.sp, letterSpacing = 1.2.sp)
             }
         }
     }
 }
 
 @Composable
-private fun StatusCard(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector,
-                       title: String, value: String, detail: String) {
-    Column(modifier.background(Panel, RoundedCornerShape(20.dp)).padding(16.dp)) {
-        Icon(icon, null, tint = Cyan, modifier = Modifier.size(25.dp))
-        Spacer(Modifier.height(15.dp))
-        Text(title, color = Muted, fontSize = 12.sp)
-        Spacer(Modifier.height(4.dp))
-        Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = if (value.length > 5) 14.sp else 22.sp)
+private fun DragonMark(pulse: Float) {
+    Box(Modifier.size(58.dp).shadow(14.dp, RoundedCornerShape(17.dp))
+        .clip(RoundedCornerShape(17.dp))
+        .background(Brush.linearGradient(listOf(Color(0xFF1B5791), Color(0xFF071326), Color(0xFF142D50))))
+        .border(1.dp, Ice.copy(alpha=.65f*pulse), RoundedCornerShape(17.dp)),
+        contentAlignment=Alignment.Center) {
+        Canvas(Modifier.fillMaxSize().padding(8.dp)) {
+            val w=size.width; val h=size.height
+            val path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(w*.50f,h*.04f)
+                lineTo(w*.82f,h*.19f); lineTo(w*.72f,h*.40f)
+                lineTo(w*.96f,h*.34f); lineTo(w*.77f,h*.61f)
+                lineTo(w*.68f,h*.88f); lineTo(w*.50f,h*.74f)
+                lineTo(w*.31f,h*.91f); lineTo(w*.26f,h*.62f)
+                lineTo(w*.04f,h*.40f); lineTo(w*.31f,h*.45f)
+                lineTo(w*.18f,h*.18f); lineTo(w*.50f,h*.04f)
+                close()
+            }
+            drawPath(path, Brush.linearGradient(listOf(Silver, Ice, Blue)))
+            drawLine(Color(0xFF061020), Offset(w*.35f,h*.37f), Offset(w*.64f,h*.30f), strokeWidth=2.3f, cap=StrokeCap.Round)
+            drawLine(Color(0xFF061020), Offset(w*.38f,h*.47f), Offset(w*.62f,h*.45f), strokeWidth=1.8f, cap=StrokeCap.Round)
+        }
+    }
+}
+
+@Composable
+private fun HeroPanel(pulse: Float) {
+    Box(Modifier.fillMaxWidth().height(204.dp).shadow(18.dp, RoundedCornerShape(26.dp))
+        .clip(RoundedCornerShape(26.dp))
+        .background(Brush.linearGradient(listOf(Color(0xFF143F70), Color(0xFF0A1A34), Color(0xFF10142E))))
+        .border(1.dp, Brush.linearGradient(listOf(Ice.copy(alpha=.8f), Blue.copy(alpha=.35f), Color(0xFF28456A))), RoundedCornerShape(26.dp))) {
+        Canvas(Modifier.fillMaxSize()) {
+            val c=Offset(size.width*.83f,size.height*.48f)
+            drawCircle(Brush.radialGradient(listOf(Blue.copy(alpha=.34f*pulse), Color.Transparent), c, size.minDimension*.62f), size.minDimension*.62f,c)
+            drawCircle(Ice.copy(alpha=.14f), size.minDimension*.37f,c, style=androidx.compose.ui.graphics.drawscope.Stroke(width=1.2f))
+            drawCircle(Blue.copy(alpha=.25f), size.minDimension*.47f,c, style=androidx.compose.ui.graphics.drawscope.Stroke(width=1f))
+            drawLine(Ice.copy(alpha=.3f), Offset(size.width*.58f, size.height*.08f), Offset(size.width*.96f,size.height*.08f), 1f)
+        }
+        Column(Modifier.align(Alignment.CenterStart).fillMaxWidth(.76f).padding(start=20.dp, top=18.dp, bottom=18.dp)) {
+            Row(verticalAlignment=Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Bolt, null, tint=Ice, modifier=Modifier.size(16.dp))
+                Spacer(Modifier.width(5.dp))
+                Text("NEXT-GEN ANDROID DESKTOP", color=Ice, fontSize=8.sp, letterSpacing=1.3.sp)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text("قوة الكمبيوتر.
+في جيبك.", color=Silver, fontSize=27.sp, fontWeight=FontWeight.Black, lineHeight=34.sp)
+            Spacer(Modifier.height(8.dp))
+            Text("بوابتك إلى عالم HASNITECH", color=Color(0xFFB6CBE6), fontSize=12.sp)
+            Spacer(Modifier.height(13.dp))
+            Row(verticalAlignment=Alignment.CenterVertically) {
+                Box(Modifier.width(30.dp).height(3.dp).clip(CircleShape).background(Brush.horizontalGradient(listOf(Ice, Blue))))
+                Spacer(Modifier.width(7.dp))
+                Text("COSMIC CORE  /  01", color=Dim, fontSize=8.sp, letterSpacing=1.3.sp)
+            }
+        }
+        Icon(Icons.Rounded.AutoAwesome, null, tint=Ice.copy(alpha=.75f*pulse),
+            modifier=Modifier.align(Alignment.TopEnd).padding(17.dp).size(22.dp))
+    }
+}
+
+@Composable
+private fun MetricPanel(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector,
+                        title: String, value: String, detail: String) {
+    Column(modifier.clip(RoundedCornerShape(19.dp)).background(Panel)
+        .border(1.dp, Color(0xFF1A3558), RoundedCornerShape(19.dp)).padding(14.dp)) {
+        Row(verticalAlignment=Alignment.CenterVertically) {
+            Icon(icon, null, tint=Ice, modifier=Modifier.size(20.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(title, color=Dim, fontSize=10.sp, maxLines=1, overflow=TextOverflow.Ellipsis)
+        }
+        Spacer(Modifier.height(14.dp))
+        Text(value, color=Silver, fontSize=if(value.length>6) 13.sp else 24.sp, fontWeight=FontWeight.ExtraBold, maxLines=1)
         Spacer(Modifier.height(5.dp))
-        Text(detail, color = Muted, fontSize = 10.sp)
+        Text(detail, color=Dim, fontSize=9.sp)
+    }
+}
+
+@Composable
+private fun QuickTile(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String) {
+    Column(modifier.clip(RoundedCornerShape(16.dp)).background(Color(0xB80B1830))
+        .border(1.dp, Color(0xFF1C3555), RoundedCornerShape(16.dp)).padding(vertical=14.dp, horizontal=8.dp),
+        horizontalAlignment=Alignment.CenterHorizontally) {
+        Icon(icon, null, tint=Ice, modifier=Modifier.size(23.dp))
+        Spacer(Modifier.height(9.dp))
+        Text(title, color=Silver, fontSize=11.sp, fontWeight=FontWeight.Bold, maxLines=1)
+        Spacer(Modifier.height(4.dp))
+        Text(subtitle, color=Dim, fontSize=6.sp, letterSpacing=.4.sp, maxLines=1)
     }
 }
