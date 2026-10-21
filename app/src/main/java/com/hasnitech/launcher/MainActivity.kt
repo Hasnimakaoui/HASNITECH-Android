@@ -430,7 +430,7 @@ private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
                 style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*(1.1f+i*.25f)))
             drawArc(ice.copy(alpha=.88f*pulse),phase*(if(i%2==0) 1.4f else -1.1f)+i*71f,
                 54f,false,Offset(cx-rr*wobble,cy-rr*.58f),
-                androidx.compose.ui.graphics.drawscope.Size(rr*2*wobble,rr*1.16f),
+                androidx.compose.ui.geometry.Size(rr*2*wobble,rr*1.16f),
                 style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*2.4f,cap=StrokeCap.Round))
         }
         // Broad tilted orbital rails, split into animated luminous arcs.
