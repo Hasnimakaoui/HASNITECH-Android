@@ -418,9 +418,21 @@ private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
         val blue=Color(0xFF3184FF); val violet=Color(0xFFB45CFF)
         val pink=Color(0xFFFF4FCE)
         val sw=(w*.0021f).coerceIn(.8f,1.8f)
-        val radius=h*.235f
+        val radius=h*.285f
         // Entirely non-humanoid: a volumetric quantum hologram suspended in a projection chamber.
         drawCircle(Brush.radialGradient(listOf(cyan.copy(alpha=.17f*pulse),blue.copy(alpha=.10f),Color.Transparent),Offset(cx,cy),h*.57f),h*.57f,Offset(cx,cy))
+        // Predatory containment field: expanding shock rings around the core.
+        for(i in 0..3) {
+            val rr=h*(.30f+i*.075f)
+            val wobble=1f+0.025f*kotlin.math.sin(Math.toRadians((phase*2f+i*90f).toDouble())).toFloat()
+            drawOval((if(i%2==0) pink else violet).copy(alpha=(.25f+i*.035f)*pulse),
+                Offset(cx-rr*wobble,cy-rr*.58f),androidx.compose.ui.geometry.Size(rr*2*wobble,rr*1.16f),
+                style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*(1.1f+i*.25f)))
+            drawArc(ice.copy(alpha=.88f*pulse),phase*(if(i%2==0) 1.4f else -1.1f)+i*71f,
+                54f,false,Offset(cx-rr*wobble,cy-rr*.58f),
+                androidx.compose.ui.graphics.drawscope.Size(rr*2*wobble,rr*1.16f),
+                style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*2.4f,cap=StrokeCap.Round))
+        }
         // Broad tilted orbital rails, split into animated luminous arcs.
         for(i in 0..5) {
             val rx=w*(.19f+i*.032f)
@@ -466,6 +478,17 @@ private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
             }
             drawPath(cage,(if(i==1) violet else blue).copy(alpha=.63f),style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw*1.25f))
         }
+        // Jagged radial energy blades make the projection feel powerful and dangerous.
+        for(i in 0..23) {
+            val a=Math.toRadians((phase*(if(i%2==0) 1.15f else -.72f)+i*15f).toDouble())
+            val inner=radius*(1.22f+(i%3)*.04f)
+            val outer=radius*(1.48f+(i%4)*.11f)
+            val p1=Offset(cx+(kotlin.math.cos(a)*inner).toFloat(),cy+(kotlin.math.sin(a)*inner*.78f).toFloat())
+            val p2=Offset(cx+(kotlin.math.cos(a)*outer).toFloat(),cy+(kotlin.math.sin(a)*outer*.78f).toFloat())
+            drawLine(if(i%4==0) pink.copy(alpha=.92f*pulse) else cyan.copy(alpha=.72f),
+                p1,p2,sw*(if(i%4==0) 2.1f else 1.2f))
+            if(i%3==0) drawCircle(ice.copy(alpha=.9f),w*.0038f,p2)
+        }
         // Dense inner plasma nucleus and faceted energy lattice.
         drawCircle(Brush.radialGradient(listOf(ice.copy(alpha=.96f*breathe),cyan.copy(alpha=.8f),blue.copy(alpha=.28f),Color.Transparent),Offset(cx,cy),radius*.78f),radius*.78f,Offset(cx,cy))
         for(i in 0..11) {
@@ -486,6 +509,20 @@ private fun HologramFigure(pulse: Float, modifier: Modifier = Modifier) {
             drawOval((if(i%2==0) cyan else violet).copy(alpha=.65f-i*.065f),
                 Offset(cx-w*(.16f+i*.027f),yy),androidx.compose.ui.geometry.Size(w*(.32f+i*.054f),h*(.012f+i*.002f)),
                 style=androidx.compose.ui.graphics.drawscope.Stroke(width=sw))
+        }
+        // Threat-level energy discharge: sharp moving lightning-like vectors.
+        for(i in 0..8) {
+            val a=Math.toRadians((phase*1.7f+i*40f).toDouble())
+            val r1=radius*1.48f
+            val r2=radius*(1.72f+(i%3)*.12f)
+            val x1=cx+(kotlin.math.cos(a)*r1).toFloat()
+            val y1=cy+(kotlin.math.sin(a)*r1*.78f).toFloat()
+            val xm=cx+(kotlin.math.cos(a+.12)*((r1+r2)*.5f)).toFloat()
+            val ym=cy+(kotlin.math.sin(a+.12)*((r1+r2)*.5f)*.78f).toFloat()
+            val x2=cx+(kotlin.math.cos(a)*r2).toFloat()
+            val y2=cy+(kotlin.math.sin(a)*r2*.78f).toFloat()
+            drawLine(violet.copy(alpha=.72f*pulse),Offset(x1,y1),Offset(xm,ym),sw*1.4f)
+            drawLine(ice.copy(alpha=.9f*pulse),Offset(xm,ym),Offset(x2,y2),sw*1.1f)
         }
         // Scanning light plane and fine volumetric particles.
         val beamY=h*scan
