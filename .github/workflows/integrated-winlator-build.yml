@@ -70,6 +70,16 @@ jobs:
               implementation 'androidx.compose.material:material-icons-extended'
           }
           """
+
+          # Align Java and Kotlin bytecode targets for the merged Compose dashboard.
+          if "compileOptions {" in g:
+              g = re.sub(r'compileOptions\s*\{.*?\}', "compileOptions {\\n        sourceCompatibility JavaVersion.VERSION_17\\n        targetCompatibility JavaVersion.VERSION_17\\n    }", g, flags=re.S, count=1)
+          else:
+              g = g.replace("android {", "android {\\n    compileOptions {\\n        sourceCompatibility JavaVersion.VERSION_17\\n        targetCompatibility JavaVersion.VERSION_17\\n    }", 1)
+          if "kotlinOptions {" in g:
+              g = re.sub(r'kotlinOptions\s*\{.*?\}', "kotlinOptions { jvmTarget = '17' }", g, flags=re.S, count=1)
+          else:
+              g = g.replace("android {", "android {\\n    kotlinOptions { jvmTarget = '17' }", 1)
           gradle.write_text(g)
 
           top = root / "build.gradle"
