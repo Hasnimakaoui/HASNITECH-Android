@@ -60,6 +60,11 @@ jobs:
 
           gradle = root / "app/build.gradle"
           g = gradle.read_text()
+          # Use a unique Android package ID to avoid conflicts with other Winlator installs.
+          g = re.sub(r"applicationId\s+['\"][^'\"]+['\"]", "applicationId 'com.hasnitech.winlator'", g, count=1)
+          if "applicationId 'com.hasnitech.winlator'" not in g:
+              g = re.sub(r"(defaultConfig\s*\{)", r"\1\n        applicationId 'com.hasnitech.winlator'", g, count=1)
+
           if "org.jetbrains.kotlin.android" not in g:
               g = "apply plugin: 'org.jetbrains.kotlin.android'\napply plugin: 'org.jetbrains.kotlin.plugin.compose'\n" + g
           g = g.replace("buildFeatures {", "buildFeatures {\n        compose true")
@@ -139,7 +144,7 @@ jobs:
           "$APKSIGNER" verify --verbose --print-certs "$APK"
           BADGING="$("$AAPT" dump badging "$APK")"
           printf '%s\n' "$BADGING" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:"
-          printf '%s\n' "$BADGING" | grep -q "package: name='com.winlator"
+          printf '%s\n' "$BADGING" | grep -q "package: name='com.hasnitech.winlator'
           MIN_SDK="$(printf '%s\n' "$BADGING" | sed -n "s/^sdkVersion:'\([^']*\)'.*/\1/p" | head -n 1)"
           test -n "$MIN_SDK"
           test "$MIN_SDK" -le 33
@@ -148,6 +153,6 @@ jobs:
       - name: Upload integrated APK
         uses: actions/upload-artifact@v4
         with:
-          name: HASNITECH-embedded-Windows-runtime-debug
+          name: HASNITECH-embedded-Windows-runtime-v2-debug
           path: winlator/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
