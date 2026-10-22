@@ -43,14 +43,16 @@ jobs:
           code = source.read_text()
           code = code.replace("class MainActivity : ComponentActivity()", "class HasniTechDashboardActivity : ComponentActivity()")
           code = code.replace("import android.os.Bundle", "import android.os.Bundle\nimport android.content.Intent")
+          code = code.replace("import androidx.compose.runtime.*", "import androidx.compose.runtime.*\nimport androidx.compose.ui.platform.LocalContext")
           code = code.replace("import androidx.compose.foundation.Canvas", "import androidx.compose.foundation.Canvas\nimport androidx.compose.foundation.clickable")
           # Make the Windows runtime card open the actual embedded Winlator activity.
           old = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp)).padding(16.dp)) {'
           new = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp))\n                        .clickable { context.startActivity(Intent(context, com.winlator.MainActivity::class.java)) }.padding(16.dp)) {'
+          code = code.replace("private fun HasniTechDashboard() {", "private fun HasniTechDashboard() {\n    val context = LocalContext.current")
           if old in code:
               code = code.replace(old, new, 1)
           else:
-              print("Dashboard panel pattern changed; keeping dashboard source unchanged")
+              print("Windows panel click wiring skipped; context support added")
           target = root / "app/src/main/java/com/hasnitech/launcher/HasniTechDashboardActivity.kt"
           target.parent.mkdir(parents=True, exist_ok=True)
           target.write_text(code)
