@@ -118,7 +118,9 @@ jobs:
           PY
       - name: Build integrated APK
         working-directory: winlator
-        run: gradle assembleDebug --no-daemon
+        env:
+          GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g -Dorg.gradle.parallel=false"
+        run: gradle assembleDebug --no-daemon -x minifyDebugWithR8
       - name: Upload integrated APK
         uses: actions/upload-artifact@v4
         with:
