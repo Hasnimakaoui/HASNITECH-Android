@@ -48,6 +48,7 @@ jobs:
           # Make the Windows runtime card open the actual embedded Winlator activity.
           old = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp)).padding(16.dp)) {'
           new = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp))\n                        .clickable { context.startActivity(Intent(context, com.winlator.MainActivity::class.java)) }.padding(16.dp)) {'
+          code = code.replace("fun HasniTechApp() {", "fun HasniTechApp() {\n    val context = LocalContext.current")
           code = code.replace("private fun HasniTechDashboard() {", "private fun HasniTechDashboard() {\n    val context = LocalContext.current")
           if old in code:
               code = code.replace(old, new, 1)
