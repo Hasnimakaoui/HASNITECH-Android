@@ -74,9 +74,9 @@ jobs:
               manifest = root / module / "src/main/AndroidManifest.xml"
               xml = manifest.read_text()
               # Remove any existing launcher filters from LimboEmuActivity first.
-              xml = re.sub(r'(<activity\\s+android:name="LimboEmuActivity"[^>]*>.*?)\\s*<intent-filter>\\s*<action android:name="android.intent.action.MAIN"\\s*/>\\s*<category android:name="android.intent.category.LAUNCHER"\\s*/>\\s*</intent-filter>', r'\\1', xml, flags=re.S, count=1)
+              xml = re.sub(r'(<activity\s+android:name="LimboEmuActivity"[^>]*>.*?)\s*<intent-filter>\s*<action android:name="android.intent.action.MAIN"\s*/>\s*<category android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>', r'\1', xml, flags=re.S, count=1)
               if "com.hasnitech.launcher.HasniTechDashboardActivity" not in xml:
-                  xml = re.sub(r'<activity\\s+android:name="LimboEmuActivity"', '<activity android:name="com.hasnitech.launcher.HasniTechDashboardActivity" android:exported="true" android:screenOrientation="landscape"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>\\n        <activity android:name="LimboEmuActivity"', xml, count=1)
+                  xml = re.sub(r'<activity\s+android:name="LimboEmuActivity"', '<activity android:name="com.hasnitech.launcher.HasniTechDashboardActivity" android:exported="true" android:screenOrientation="landscape"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>\\n        <activity android:name="LimboEmuActivity"', xml, count=1)
               manifest.write_text(xml)
           PY
       - name: Patch legacy repositories and install compatible Gradle
@@ -97,11 +97,12 @@ jobs:
         run: /tmp/gradle-6.7.1/bin/gradle --no-daemon assembleDebug
       - name: Verify APK exists
         run: |
-          find limbo -path '*/build/outputs/apk/*/*.apk' -type f -print -quit | grep -q .
+          test -s limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk
+          ls -lh limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk
       - name: Upload QEMU APK
         uses: actions/upload-artifact@v4
         with:
           name: HASNITECH-QEMU-debug-APK
-          path: limbo/**/build/outputs/apk/debug/*.apk
+          path: limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk
           if-no-files-found: error
           retention-days: 14
