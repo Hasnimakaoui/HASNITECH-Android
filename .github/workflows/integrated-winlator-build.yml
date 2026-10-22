@@ -60,10 +60,11 @@ jobs:
 
           gradle = root / "app/build.gradle"
           g = gradle.read_text()
-          # Use a unique Android package ID to avoid conflicts with other Winlator installs.
-          g = re.sub(r"applicationId\s+['\"][^'\"]+['\"]", "applicationId 'com.hasnitech.winlator'", g, count=1)
-          if "applicationId 'com.hasnitech.winlator'" not in g:
-              g = re.sub(r"(defaultConfig\s*\{)", r"\1\n        applicationId 'com.hasnitech.winlator'", g, count=1)
+          # Preserve HASNITECH's original Android package identity so this remains
+          # an update path for the existing app, not a separate Winlator-branded app.
+          g = re.sub(r"applicationId\s+['\"][^'\"]+['\"]", "applicationId 'com.hasnitech.launcher'", g, count=1)
+          if "applicationId 'com.hasnitech.launcher'" not in g:
+              g = re.sub(r"(defaultConfig\s*\{)", r"\1\n        applicationId 'com.hasnitech.launcher'", g, count=1)
 
           if "org.jetbrains.kotlin.android" not in g:
               g = "apply plugin: 'org.jetbrains.kotlin.android'\napply plugin: 'org.jetbrains.kotlin.plugin.compose'\n" + g
@@ -167,7 +168,7 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK" | grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true'
           BADGING="$("$AAPT" dump badging "$APK")"
           printf '%s\n' "$BADGING" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:"
-          printf '%s\n' "$BADGING" | grep -q "package: name='com.hasnitech.winlator'"
+          printf '%s\n' "$BADGING" | grep -q "package: name='com.hasnitech.launcher'"
           MIN_SDK="$(printf '%s\n' "$BADGING" | sed -n "s/^sdkVersion:'\([^']*\)'.*/\1/p" | head -n 1)"
           test -n "$MIN_SDK"
           test "$MIN_SDK" -le 33
