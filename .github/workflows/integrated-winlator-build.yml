@@ -130,7 +130,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK="$(find winlator/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          APK="$(find ../winlator/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
           test -n "$APK"
           echo "APK path: $APK"
           test -s "$APK"
