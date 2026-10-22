@@ -2,6 +2,8 @@ name: Build HASNITECH with embedded QEMU (Limbo)
 on:
   push:
     branches: [qemu-integration]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
