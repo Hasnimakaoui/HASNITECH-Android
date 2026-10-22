@@ -163,6 +163,7 @@ jobs:
           path: winlator/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
       - name: Publish direct APK download
+        working-directory: hasnitech
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
