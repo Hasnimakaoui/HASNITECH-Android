@@ -163,7 +163,7 @@ jobs:
           test -x "$APKSIGNER"
           test -x "$AAPT"
           "$APKSIGNER" verify --verbose --print-certs "$APK"
-          "$APKSIGNER" verify --verbose "$APK" | grep -q 'Verified using v1 scheme (JAR signing): true'
+          # V1 signing is optional for this app's minSdk 26; enforce modern V2 signature.
           "$APKSIGNER" verify --verbose "$APK" | grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true'
           BADGING="$("$AAPT" dump badging "$APK")"
           printf '%s\n' "$BADGING" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:"
