@@ -1,0 +1,113 @@
+name: Build HASNITECH with embedded Winlator runtime
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+jobs:
+  integrated-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout HASNITECH
+        uses: actions/checkout@v4
+        with:
+          path: hasnitech
+      - name: Checkout Winlator runtime source
+        uses: actions/checkout@v4
+        with:
+          repository: brunodev85/winlator-app
+          ref: main
+          path: winlator
+      - name: Set up Java and Android build tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Merge HASNITECH dashboard into Winlator application
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path("winlator")
+          source = Path("hasnitech/app/src/main/java/com/hasnitech/launcher/MainActivity.kt")
+          if not source.exists():
+              raise SystemExit("HASNITECH MainActivity.kt not found")
+          code = source.read_text()
+          code = code.replace("class MainActivity : ComponentActivity()", "class HasniTechDashboardActivity : ComponentActivity()")
+          code = code.replace("import android.os.Bundle", "import android.os.Bundle\nimport android.content.Intent")
+          code = code.replace("import androidx.compose.foundation.Canvas", "import androidx.compose.foundation.Canvas\nimport androidx.compose.foundation.clickable")
+          # Make the Windows runtime card open the actual embedded Winlator activity.
+          old = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp)).padding(16.dp)) {'
+          new = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp))\n                        .clickable { context.startActivity(Intent(context, com.winlator.MainActivity::class.java)) }.padding(16.dp)) {'
+          if old not in code:
+              raise SystemExit("Could not locate Windows runtime panel to wire its launch action")
+          code = code.replace(old, new, 1)
+          target = root / "app/src/main/java/com/hasnitech/launcher/HasniTechDashboardActivity.kt"
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_text(code)
+
+          gradle = root / "app/build.gradle"
+          g = gradle.read_text()
+          if "org.jetbrains.kotlin.android" not in g:
+              g = "apply plugin: 'org.jetbrains.kotlin.android'\napply plugin: 'org.jetbrains.kotlin.plugin.compose'\n" + g
+          g = g.replace("buildFeatures {", "buildFeatures {\n        compose true")
+          if "compose-bom" not in g:
+              g += """
+          dependencies {
+              implementation platform('androidx.compose:compose-bom:2024.12.01')
+              implementation 'androidx.activity:activity-compose:1.10.0'
+              implementation 'androidx.compose.ui:ui'
+              implementation 'androidx.compose.ui:ui-tooling-preview'
+              implementation 'androidx.compose.material3:material3'
+              implementation 'androidx.compose.material:material-icons-extended'
+          }
+          """
+          gradle.write_text(g)
+
+          top = root / "build.gradle"
+          t = top.read_text()
+          if "org.jetbrains.kotlin.android" not in t:
+              t = t.replace("plugins {", "plugins {\n    id 'org.jetbrains.kotlin.android' version '2.0.21' apply false\n    id 'org.jetbrains.kotlin.plugin.compose' version '2.0.21' apply false", 1)
+          top.write_text(t)
+
+          manifest = root / "app/src/main/AndroidManifest.xml"
+          m = manifest.read_text()
+          activity = '''
+                  <activity android:name="com.hasnitech.launcher.HasniTechDashboardActivity"
+                      android:exported="true"
+                      android:screenOrientation="sensorLandscape"
+                      android:theme="@style/AppThemeDark">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+          '''
+          # Keep Winlator MainActivity registered but remove its launcher filter.
+          pattern = re.compile(r'(<activity android:name="com\\.winlator\\.MainActivity".*?>)(.*?)(</activity>)', re.S)
+          match = pattern.search(m)
+          if not match:
+              raise SystemExit("Winlator MainActivity activity entry not found")
+          body = match.group(2)
+          body = re.sub(r'\s*<intent-filter>\s*<action android:name="android.intent.action.MAIN"/>\s*<category android:name="android.intent.category.LAUNCHER"/>\s*</intent-filter>', '', body, flags=re.S)
+          m = m[:match.start()] + match.group(1) + body + match.group(3) + m[match.end():]
+          m = m.replace("        <activity android:name=" + '"com.winlator.XServerDisplayActivity"', activity + '\n        <activity android:name="com.winlator.XServerDisplayActivity"', 1)
+          manifest.write_text(m)
+          PY
+      - name: Build integrated APK
+        working-directory: winlator
+        run: gradle assembleDebug --no-daemon
+      - name: Upload integrated APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HASNITECH-embedded-Windows-runtime-debug
+          path: winlator/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
