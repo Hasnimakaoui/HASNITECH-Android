@@ -27,10 +27,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Install legacy Android build tools
-        run: sdkmanager "platforms;android-29" "build-tools;29.0.3" "ndk;21.4.7075529"
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-29" "build-tools;29.0.3" "ndk;21.4.7075529"
       - name: Integrate HASNITECH dashboard as launcher and retain QEMU emulator
         shell: bash
         run: |
