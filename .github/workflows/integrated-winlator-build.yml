@@ -92,7 +92,7 @@ jobs:
                   </activity>
           '''
           # Keep Winlator MainActivity registered but remove its launcher filter.
-          pattern = re.compile(r'(<activity android:name="com\.winlator\.MainActivity".*?>)(.*?)(</activity>)', re.S)
+          pattern = re.compile(r'(<activity android:name="com[.]winlator[.]MainActivity".*?>)(.*?)(</activity>)', re.S)
           match = pattern.search(m)
           if not match:
               raise SystemExit("Winlator MainActivity activity entry not found")
