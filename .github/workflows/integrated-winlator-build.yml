@@ -192,7 +192,7 @@ jobs:
         run: |
           set -euo pipefail
           APK="$(find ../winlator/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
-          TAG="hasnitech-apk-${GITHUB_RUN_NUMBER}"
+          TAG="hasnitech-winlator-${GITHUB_RUN_ID}"
           gh release create "$TAG" "$APK#HASNITECH-Winlator.apk" --repo Hasnimakaoui/HASNITECH-Android \
             --title "HASNITECH APK build ${GITHUB_RUN_NUMBER}" \
             --notes "APK direct download. Package, signature, manifest, launcher and ARM64 checks passed in GitHub Actions."
