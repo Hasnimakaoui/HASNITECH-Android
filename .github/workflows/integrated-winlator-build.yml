@@ -149,10 +149,16 @@ jobs:
           test -n "$MIN_SDK"
           test "$MIN_SDK" -le 33
           unzip -Z1 "$APK" | grep -q '^lib/arm64-v8a/'
-          echo "APK validation passed: signature verified, manifest readable, ARM64 libraries present, minimum SDK <= Android 13."
+          MANIFEST_TREE="$("$AAPT" dump xmltree "$APK" AndroidManifest.xml)"
+          printf '%s\\n' "$MANIFEST_TREE" | grep -q 'com.hasnitech.launcher.HasniTechDashboardActivity'
+          printf '%s\\n' "$MANIFEST_TREE" | grep -q 'android.intent.action.MAIN'
+          printf '%s\\n' "$MANIFEST_TREE" | grep -q 'android.intent.category.LAUNCHER'
+          printf '%s\\n' "$MANIFEST_TREE" | grep -q 'com.winlator.MainActivity'
+          # Ensure the APK contains the native ARM64 runtime libraries and a valid launcher.
+          echo "APK validation passed: signature, package, launcher, Winlator entry point, ARM64 libraries and minimum SDK checks passed."
       - name: Upload integrated APK
         uses: actions/upload-artifact@v4
         with:
-          name: HASNITECH-embedded-Windows-runtime-v2-debug
+          name: HASNITECH-embedded-Windows-runtime-v3-debug
           path: winlator/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
