@@ -126,6 +126,27 @@ jobs:
         env:
           GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g -Dorg.gradle.parallel=false"
         run: gradle assembleDebug --no-daemon -x minifyDebugWithR8
+      - name: Align and re-sign APK for installer compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find winlator/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          BUILD_TOOLS="$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
+          test -x "$ZIPALIGN"
+          test -x "$APKSIGNER"
+          KEYSTORE="$HOME/.android/debug.keystore"
+          if [ ! -f "$KEYSTORE" ]; then
+            mkdir -p "$HOME/.android"
+            keytool -genkeypair -keystore "$KEYSTORE" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          "$ZIPALIGN" -f -p 4 "$APK" "${APK%.apk}-aligned.apk"
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out "${APK%.apk}-signed.apk" "${APK%.apk}-aligned.apk"
+          mv "${APK%.apk}-signed.apk" "$APK"
+          rm -f "${APK%.apk}-aligned.apk"
+          "$APKSIGNER" verify --verbose "$APK"
       - name: Validate APK structure, signature, package and device compatibility
         shell: bash
         run: |
@@ -142,6 +163,8 @@ jobs:
           test -x "$APKSIGNER"
           test -x "$AAPT"
           "$APKSIGNER" verify --verbose --print-certs "$APK"
+          "$APKSIGNER" verify --verbose "$APK" | grep -q 'Verified using v1 scheme (JAR signing): true'
+          "$APKSIGNER" verify --verbose "$APK" | grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true'
           BADGING="$("$AAPT" dump badging "$APK")"
           printf '%s\n' "$BADGING" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:"
           printf '%s\n' "$BADGING" | grep -q "package: name='com.hasnitech.winlator'"
