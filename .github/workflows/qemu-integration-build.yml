@@ -76,9 +76,22 @@ jobs:
           xml = re.sub(r'(<activity\s+android:name="LimboEmuActivity".*?)\s*<intent-filter>\s*<action android:name="android.intent.action.MAIN"\s*/>\s*<category android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>', r'\1', xml, flags=re.S, count=1)
           manifest.write_text(xml)
           PY
+      - name: Patch legacy repositories and install compatible Gradle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          for path in Path("limbo").rglob("*.gradle"):
+              data = path.read_text()
+              data = data.replace("jcenter()", "mavenCentral()")
+              path.write_text(data)
+          PY
+          curl -fsSL https://services.gradle.org/distributions/gradle-6.7.1-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
       - name: Build integrated QEMU APK
         working-directory: limbo
-        run: gradle --no-daemon assembleDebug
+        run: /tmp/gradle-6.7.1/bin/gradle --no-daemon assembleDebug
       - name: Verify APK exists
         run: |
           find limbo -path '*/build/outputs/apk/*/*.apk' -type f -print -quit | grep -q .
