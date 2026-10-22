@@ -75,7 +75,7 @@ jobs:
           top = root / "build.gradle"
           t = top.read_text()
           if "org.jetbrains.kotlin.android" not in t:
-              t = t.replace("plugins {", "plugins {\n    id 'org.jetbrains.kotlin.android' version '2.0.21' apply false\n    id 'org.jetbrains.kotlin.plugin.compose' version '2.0.21' apply false", 1)
+              t = t.replace("dependencies {", "dependencies {\n        classpath 'org.jetbrains.kotlin.android:org.jetbrains.kotlin.android.gradle.plugin:2.0.21'\n        classpath 'org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:2.0.21'", 1)
           top.write_text(t)
 
           manifest = root / "app/src/main/AndroidManifest.xml"
