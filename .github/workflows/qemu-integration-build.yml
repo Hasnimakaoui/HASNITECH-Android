@@ -66,17 +66,18 @@ jobs:
               code = code.replace("import android.os.Bundle", "import android.os.Bundle\nimport android.content.Intent")
           if "import androidx.compose.foundation.clickable" not in code:
               code = code.replace("import androidx.compose.foundation.Canvas", "import androidx.compose.foundation.Canvas\nimport androidx.compose.foundation.clickable")
-          target = root / "limbo-android-x86/src/main/java/com/hasnitech/launcher/HasniTechDashboardActivity.kt"
-          target.parent.mkdir(parents=True, exist_ok=True)
-          target.write_text(code)
-          manifest = root / "limbo-android-x86/src/main/AndroidManifest.xml"
-          xml = manifest.read_text()
-          xml = re.sub(r'<activity\s+android:name="LimboEmuActivity"', '<activity android:name="com.hasnitech.launcher.HasniTechDashboardActivity" android:exported="true" android:screenOrientation="landscape"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>\n        <activity android:name="LimboEmuActivity"', xml, count=1)
-          # Only the dashboard is the launcher; keep Limbo's emulator activity registered.
-          xml = re.sub(r'\s*<intent-filter>\s*<action android:name="android.intent.action.MAIN"\s*/>\s*<category android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>', '', xml, count=1 if 'com.hasnitech.launcher.HasniTechDashboardActivity' not in xml else 0)
-          # Previous regex may target the first filter; ensure LimboEmuActivity is not a launcher.
-          xml = re.sub(r'(<activity\s+android:name="LimboEmuActivity".*?)\s*<intent-filter>\s*<action android:name="android.intent.action.MAIN"\s*/>\s*<category android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>', r'\1', xml, flags=re.S, count=1)
-          manifest.write_text(xml)
+          # Build the dashboard into both ARM (for modern phones) and x86 variants.
+          for module in ("limbo-android-arm", "limbo-android-x86"):
+              target = root / module / "src/main/java/com/hasnitech/launcher/HasniTechDashboardActivity.kt"
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(code)
+              manifest = root / module / "src/main/AndroidManifest.xml"
+              xml = manifest.read_text()
+              # Remove any existing launcher filters from LimboEmuActivity first.
+              xml = re.sub(r'(<activity\\s+android:name="LimboEmuActivity"[^>]*>.*?)\\s*<intent-filter>\\s*<action android:name="android.intent.action.MAIN"\\s*/>\\s*<category android:name="android.intent.category.LAUNCHER"\\s*/>\\s*</intent-filter>', r'\\1', xml, flags=re.S, count=1)
+              if "com.hasnitech.launcher.HasniTechDashboardActivity" not in xml:
+                  xml = re.sub(r'<activity\\s+android:name="LimboEmuActivity"', '<activity android:name="com.hasnitech.launcher.HasniTechDashboardActivity" android:exported="true" android:screenOrientation="landscape"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>\\n        <activity android:name="LimboEmuActivity"', xml, count=1)
+              manifest.write_text(xml)
           PY
       - name: Patch legacy repositories and install compatible Gradle
         shell: bash
