@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master]
 permissions:
-  contents: read
+  contents: write
 jobs:
   integrated-apk:
     runs-on: ubuntu-latest
@@ -162,3 +162,13 @@ jobs:
           name: HASNITECH-embedded-Windows-runtime-v3-debug
           path: winlator/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+      - name: Publish direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK="$(find winlator/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          TAG="hasnitech-apk-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" "$APK#HASNITECH-Winlator.apk" \
+            --title "HASNITECH APK build ${GITHUB_RUN_NUMBER}" \
+            --notes "APK direct download. Package, signature, manifest, launcher and ARM64 checks passed in GitHub Actions."
