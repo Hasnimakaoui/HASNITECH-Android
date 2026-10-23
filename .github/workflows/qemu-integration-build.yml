@@ -280,6 +280,14 @@ jobs:
           manifest = root / "limbo-android-x86/src/main/AndroidManifest.xml"
           xml = manifest.read_text().replace('package="com.hasnitech.launcher"', '')
           manifest.write_text(xml)
+          # Limbo's Application class incorrectly derives the installed package name
+          # from the Activity/Application Java namespace. HASNITECH's installed ID is
+          # com.hasnitech.launcher, so use Android's actual package name API instead.
+          app_java = root / "limbo-android-lib/src/main/java/com/max2idea/android/limbo/main/LimboApplication.java"
+          java = app_java.read_text()
+          java = java.replace("context.getClass().getPackage().getName()", "context.getPackageName()")
+          app_java.write_text(java)
+          print("Patched Limbo package lookup to use the installed HASNITECH package ID.")
           print("Modern Compose toolchain configured for HASNITECH launcher.")
           PY
       - name: Build integrated QEMU APK
