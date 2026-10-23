@@ -1,0 +1,327 @@
+name: Build HASNITECH with embedded QEMU (Limbo)
+on:
+  push:
+    branches: [qemu-integration]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qemu-apk:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout HASNITECH
+        uses: actions/checkout@v4
+        with:
+          ref: qemu-integration-corrected
+          path: hasnitech
+      - name: Checkout QEMU Android frontend (Limbo)
+        uses: actions/checkout@v4
+        with:
+          repository: limboemu/limbo
+          ref: master
+          submodules: recursive
+          path: limbo
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK packages
+        shell: bash
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-29" "build-tools;29.0.3" "ndk;21.4.7075529" "ndk;23.1.7779620"
+      - name: Integrate HASNITECH dashboard as launcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path("limbo")
+          source = Path("hasnitech/app/src/main/java/com/hasnitech/launcher/MainActivity.kt")
+          if not source.exists():
+              raise SystemExit("HASNITECH dashboard source not found")
+          code = source.read_text()
+          code, count = re.subn(r'\bclass\s+MainActivity\s*:', 'class HasniTechDashboardActivity :', code, count=1)
+          if count != 1:
+              raise SystemExit("Could not rename HASNITECH MainActivity safely")
+          if "import android.content.Intent" not in code:
+              code = code.replace("import android.os.Bundle", "import android.os.Bundle\nimport android.content.Intent")
+          # Wire the actual Windows page to the bundled Limbo/QEMU x86_64 emulator.
+          old_runtime = '1 -> WindowsRuntimePanel(context, cyan, Silver, Dim, blue)'
+          new_runtime = '''1 -> Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                              Button(onClick = { context.startActivity(Intent(context, com.limbo.emu.main.LimboEmuActivity::class.java)) },
+                                  modifier = Modifier.fillMaxWidth()) { Text("فتح محاكي Windows / QEMU") }
+                              WindowsRuntimePanel(context, cyan, Silver, Dim, blue)
+                          }'''
+          if old_runtime not in code:
+              raise SystemExit("Windows runtime page target not found; refusing to build a dashboard with no emulator launch action")
+          code = code.replace(old_runtime, new_runtime, 1)
+          code = code.replace("محرك Windows غير مدمج داخل HASNITECH. لم يتم تشغيل QEMU أو Wine/Box64.", "محرك QEMU x86_64 مدمج. افتح المحاكي وأنشئ آلة افتراضية وحدد صورة قرص Windows.")
+          code = code.replace("محرك التشغيل غير مدمج", "محرك QEMU مدمج")
+          if "import androidx.compose.foundation.clickable" not in code:
+              code = code.replace("import androidx.compose.foundation.Canvas", "import androidx.compose.foundation.Canvas\nimport androidx.compose.foundation.clickable")
+          if "import androidx.compose.ui.platform.LocalContext" not in code:
+              code = code.replace("import androidx.compose.ui.unit.dp", "import androidx.compose.ui.platform.LocalContext\nimport androidx.compose.ui.unit.dp")
+          code = code.replace("fun HasniTechApp() {", "fun HasniTechApp() {\n    val context = LocalContext.current")
+          old = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp)).padding(16.dp)) {'
+          new = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp)).clickable { context.startActivity(Intent(context, com.max2idea.android.limbo.main.LimboSettingsManager::class.java)) }.padding(16.dp)) {'
+          if old in code:
+              code = code.replace(old, new, 1)
+          else:
+              print("NOTE: dashboard Windows card click target not found; dashboard will still be built")
+
+          for module in ("limbo-android-x86",):
+              target = root / module / "src/main/java/com/hasnitech/launcher/HasniTechDashboardActivity.kt"
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(code)
+              manifest = root / module / "src/main/AndroidManifest.xml"
+              xml = manifest.read_text()
+              # Match both relative and fully qualified Limbo activity names.
+              activity_pat = r'<activity\b[^>]*android:name="(?:[^"]*\.)?LimboEmuActivity"[^>]*>.*?</activity>'
+              match = re.search(activity_pat, xml, flags=re.S)
+              if not match:
+                  raise SystemExit(f"Limbo launcher activity not found in {manifest}")
+              limbo_activity = match.group(0)
+              # The app manifest package is changed to com.hasnitech.launcher later.
+              # Keep Limbo's Activity explicitly qualified so Android resolves the real class.
+              limbo_activity = re.sub(
+                  r'android:name="(?:[^"]*\\.)?LimboEmuActivity"',
+                  'android:name="com.limbo.emu.main.LimboEmuActivity"',
+                  limbo_activity, count=1)
+              limbo_activity = re.sub(
+                  r'\s*<intent-filter>\s*<action\s+android:name="android.intent.action.MAIN"\s*/>\s*<category\s+android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>',
+                  '', limbo_activity, flags=re.S)
+              dashboard_activity = '''
+              <activity android:name="com.hasnitech.launcher.HasniTechDashboardActivity"
+                  android:exported="true" android:screenOrientation="landscape">
+                  <intent-filter>
+                      <action android:name="android.intent.action.MAIN"/>
+                      <category android:name="android.intent.category.LAUNCHER"/>
+                  </intent-filter>
+              </activity>
+              '''
+              xml = xml[:match.start()] + dashboard_activity + "\n" + limbo_activity + xml[match.end():]
+              manifest.write_text(xml)
+          PY
+      - name: Preserve HASNITECH app identity in the QEMU package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          gradle = Path('limbo/limbo-android-x86/build.gradle')
+          data = gradle.read_text()
+          data, n = re.subn(r'applicationId\s+"[^"]+"', 'applicationId "com.hasnitech.launcher"', data, count=1)
+          if n != 1:
+              raise SystemExit('Could not set HASNITECH applicationId')
+          gradle.write_text(data)
+
+          manifest = Path('limbo/limbo-android-x86/src/main/AndroidManifest.xml')
+          xml = manifest.read_text()
+          xml = xml.replace('package="com.limbo.emu.main"', 'package="com.hasnitech.launcher"')
+          xml = xml.replace('android:label="Limbo x86 PC Emulator"', 'android:label="HASNITECH"')
+          xml = xml.replace('android:label="Limbo x86"', 'android:label="HASNITECH"')
+          manifest.write_text(xml)
+          print('Configured package ID and visible app labels for HASNITECH.')
+          PY
+      - name: Patch legacy repositories and install compatible Gradle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          for path in Path("limbo").rglob("*.gradle"):
+              data = path.read_text()
+              data = data.replace("jcenter()", "mavenCentral()")
+              path.write_text(data)
+          PY
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+      - name: Build and package real ARM64 QEMU engine
+        shell: bash
+        working-directory: limbo/limbo-android-lib/src/main/jni
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          NDK_ROOT: /usr/local/lib/android/sdk/ndk/23.1.7779620
+          BUILD_HOST: arm64-v8a
+          BUILD_GUEST: x86_64-softmmu
+          USE_QEMU_VERSION: 5.1.0
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y make autoconf automake git python3 binutils libtool-bin pkg-config flex bison gettext texinfo gtk-doc-tools rsync patch curl wget xz-utils build-essential
+          test -d "$NDK_ROOT"
+          fetch_extract() {
+            url="$1"; archive="$2"; source_dir="$3"; target_dir="$4"; mode="$5"
+            curl -fL --retry 4 --retry-delay 2 "$url" -o "/tmp/$archive"
+            if [ "$mode" = xz ]; then tar -xJf "/tmp/$archive" -C /tmp; else tar -xzf "/tmp/$archive" -C /tmp; fi
+            test -d "/tmp/$source_dir"
+            rm -rf "$target_dir"
+            mv "/tmp/$source_dir" "$target_dir"
+          }
+          fetch_extract https://download.qemu.org/qemu-5.1.0.tar.xz qemu-5.1.0.tar.xz qemu-5.1.0 qemu xz
+          fetch_extract https://ftp.gnome.org/pub/GNOME/sources/glib/2.56/glib-2.56.1.tar.xz glib-2.56.1.tar.xz glib-2.56.1 glib xz
+          fetch_extract https://sourceware.org/pub/libffi/libffi-3.3.tar.gz libffi-3.3.tar.gz libffi-3.3 libffi gz
+          fetch_extract https://www.cairographics.org/releases/pixman-0.40.0.tar.gz pixman-0.40.0.tar.gz pixman-0.40.0 pixman gz
+          fetch_extract https://www.libsdl.org/release/SDL2-2.0.8.tar.gz SDL2-2.0.8.tar.gz SDL2-2.0.8 SDL2 gz
+          patch -d qemu -p1 < patches/qemu-5.1.0.patch
+          patch -d glib -p1 < patches/glib-2.56.1.patch
+          patch -d SDL2 -p1 < patches/sdl2-2.0.8.patch
+          export PATH="$NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          export ANDROID_NDK_HOME="$NDK_ROOT"
+          export BUILD_THREADS="$(nproc)"
+          make limbo
+          test -s ../jniLibs/arm64-v8a/liblimbo.so
+          test -s ../../../../limbo-android-x86/src/main/jniLibs/arm64-v8a/libqemu-system-x86_64.so
+      - name: Remove obsolete Android Gradle build-cache flag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f limbo/gradle.properties ]; then
+            sed -i '/^[[:space:]]*android\.enableBuildCache[[:space:]]*=/d' limbo/gradle.properties
+            ! grep -q 'android.enableBuildCache' limbo/gradle.properties
+          fi
+      - name: Configure modern Kotlin Compose build for HASNITECH dashboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path("limbo")
+          (root / "build.gradle").write_text("""buildscript {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.7.3'
+                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21'
+                  classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.0.21'
+              }
+          }
+          
+          """)
+          (root / "settings.gradle").write_text("""pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() }
+          }
+          rootProject.name = 'HASNITECH-QEMU'
+          include ':limbo-android-lib', ':limbo-android-x86'
+          """)
+          app = root / "limbo-android-x86/build.gradle"
+          app.write_text("""apply plugin: 'com.android.application'
+          apply plugin: 'org.jetbrains.kotlin.android'
+          apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+          android {
+              namespace 'com.limbo.emu.main'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'com.hasnitech.launcher'
+                  minSdk 23
+                  targetSdk 28
+                  versionCode 1
+                  versionName '1.0'
+                  ndk { abiFilters 'arm64-v8a' }
+              }
+              buildTypes {
+                  debug { jniDebuggable true }
+                  release { minifyEnabled false }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = '17' }
+              buildFeatures { compose true }
+              sourceSets { main { jniLibs.srcDirs = ['src/main/jniLibs'] } }
+          }
+          dependencies {
+              implementation project(':limbo-android-lib')
+              implementation 'androidx.core:core-ktx:1.15.0'
+              implementation 'androidx.appcompat:appcompat:1.7.0'
+              implementation 'androidx.activity:activity-compose:1.9.3'
+              implementation platform('androidx.compose:compose-bom:2024.10.01')
+              implementation 'androidx.compose.ui:ui'
+              implementation 'androidx.compose.ui:ui-graphics'
+              implementation 'androidx.compose.ui:ui-tooling-preview'
+              implementation 'androidx.compose.foundation:foundation'
+              implementation 'androidx.compose.material3:material3'
+              implementation 'androidx.compose.material:material-icons-extended'
+              implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+              debugImplementation 'androidx.compose.ui:ui-tooling'
+          }
+          """)
+          lib = root / "limbo-android-lib/build.gradle"
+          data = lib.read_text().replace("apply plugin: 'com.android.library'", "apply plugin: 'com.android.library'" + chr(10))
+          data = data.replace("android {", "android {" + chr(10) + "    namespace 'com.limbo.emu.lib'" + chr(10) + "    compileSdkVersion 35")
+          data = data.replace("    compileSdkVersion 29", "")
+          data = data.replace("    buildToolsVersion '29.0.3'", "")
+          data = data.replace("minSdkVersion 21", "minSdkVersion 23")
+          data = data.replace("targetSdkVersion 29", "targetSdkVersion 28")
+          data = data.replace("jcenter()", "mavenCentral()")
+          lib.write_text(data)
+          manifest = root / "limbo-android-x86/src/main/AndroidManifest.xml"
+          xml = manifest.read_text().replace('package="com.hasnitech.launcher"', '')
+          manifest.write_text(xml)
+          # Limbo's Application class incorrectly derives the installed package name
+          # from the Activity/Application Java namespace. HASNITECH's installed ID is
+          # com.hasnitech.launcher, so use Android's actual package name API instead.
+          app_java = root / "limbo-android-lib/src/main/java/com/max2idea/android/limbo/main/LimboApplication.java"
+          java = app_java.read_text()
+          java = java.replace("context.getClass().getPackage().getName()", "context.getPackageName()")
+          app_java.write_text(java)
+          print("Patched Limbo package lookup to use the installed HASNITECH package ID.")
+          print("Modern Compose toolchain configured for HASNITECH launcher.")
+          PY
+      - name: Build integrated QEMU APK
+        working-directory: limbo
+        run: /tmp/gradle-8.9/bin/gradle --no-daemon :limbo-android-x86:assembleDebug
+      - name: Validate APK identity, dashboard, and native QEMU runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="limbo/limbo-android-x86/build/outputs/apk/debug/limbo-android-x86-debug.apk"
+          test -s "$APK"
+          unzip -t "$APK" | tail -n 2
+          unzip -Z1 "$APK" > /tmp/apk-files.txt
+          AAPT="/usr/local/lib/android/sdk/build-tools/29.0.3/aapt"
+          BADGING="$("$AAPT" dump badging "$APK")"
+          echo "$BADGING" | grep -F "package: name='com.hasnitech.launcher'"
+          echo "$BADGING" | grep -F "application-label:'HASNITECH'"
+          grep -Eq '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt
+          FOUND_DASHBOARD=0
+          while IFS= read -r dex; do
+            if unzip -p "$APK" "$dex" | strings | grep -q 'HasniTechDashboardActivity'; then
+              FOUND_DASHBOARD=1
+              break
+            fi
+          done < <(grep -E '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt)
+          test "$FOUND_DASHBOARD" -eq 1 || { echo "Dashboard class missing from DEX"; exit 1; }
+          grep -q '^lib/arm64-v8a/liblimbo\.so$' /tmp/apk-files.txt
+          grep -q '^lib/arm64-v8a/libqemu-system-x86_64\.so$' /tmp/apk-files.txt
+          echo "APK identity, HASNITECH dashboard, and ARM64 QEMU libraries verified."
+      - name: Upload integrated QEMU APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HASNITECH-QEMU-integrated-debug-APK
+          path: limbo/limbo-android-x86/build/outputs/apk/debug/limbo-android-x86-debug.apk
+          if-no-files-found: error
+          retention-days: 14

@@ -11,3 +11,16 @@ Runtime components that need to be built and packaged for Android ARM64 include 
 ## Integration status
 
 This file documents the upstream source references only. It does **not** claim that these native components are bundled into the HASNITECH APK. A real in-process integration requires porting/merging the upstream Android app and its native build system, resolving application/package/resource conflicts, and validating the resulting APK on-device. Until that work is complete, HASNITECH must keep treating Winlator as an external runtime.
+
+
+## QEMU Windows disk provisioning
+
+The Android QEMU build does not itself install Windows. This repository intentionally does not commit a Microsoft ISO or a preinstalled Windows disk image. To create a bootable disk, use a properly licensed Windows ISO obtained from Microsoft and install it into a QCOW2 disk with QEMU on a host machine. Copy the resulting disk image to the device and configure the HASNITECH QEMU machine to use it as its primary drive.
+
+For ARM64 Android, the app's QEMU engine is a **host ARM64, x86_64 guest** emulator using software translation. Performance for a full x86_64 Windows desktop on mid-range mobile hardware may be very poor. This is a technical constraint, not a dashboard setting.
+
+The release is not considered "Windows preinstalled" until a Windows disk image is packaged or provisioned and an actual guest boot is verified. Do not label a QEMU-only APK as a Windows installation.
+
+## Automated Windows disk build entry point
+
+The Android APK build and the guest operating-system image are separate deliverables. The current QEMU APK workflow only builds the emulator; it must not be treated as a preinstalled Windows image. A Windows disk image can only be generated from valid Windows installation media and then verified by booting that image in QEMU. Do not upload or publish an image unless the workflow has completed the installation and a guest-boot verification step.

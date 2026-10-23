@@ -1,0 +1,117 @@
+name: Provision a Windows disk for HASNITECH QEMU
+
+on:
+  workflow_dispatch:
+    inputs:
+      windows_iso_url:
+        description: "Direct HTTPS URL to a Windows 10/11 ISO you are licensed to use"
+        required: true
+        type: string
+      disk_size_gb:
+        description: "Virtual disk size in GB (20–64)"
+        required: true
+        default: "32"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  provision-windows-disk:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 300
+    steps:
+      - name: Validate inputs and install QEMU tools
+        shell: bash
+        env:
+          ISO_URL: ${{ inputs.windows_iso_url }}
+          DISK_GB: ${{ inputs.disk_size_gb }}
+        run: |
+          set -euo pipefail
+          [[ "$ISO_URL" == https://* ]] || { echo "A direct HTTPS ISO URL is required."; exit 1; }
+          [[ "$DISK_GB" =~ ^[0-9]+$ ]] && (( DISK_GB >= 20 && DISK_GB <= 64 )) || { echo "disk_size_gb must be 20–64."; exit 1; }
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 qemu-utils genisoimage curl p7zip-full
+      - name: Download Windows installation ISO
+        shell: bash
+        env:
+          ISO_URL: ${{ inputs.windows_iso_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 3 --output windows.iso "$ISO_URL"
+          test "$(stat -c%s windows.iso)" -gt 1000000000 || { echo "Downloaded file is too small to be a Windows ISO."; exit 1; }
+          file windows.iso
+          7z t windows.iso
+      - name: Create unattended Windows Setup answer file
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > autounattend.xml <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <unattend xmlns="urn:schemas-microsoft-com:unattend">
+            <settings pass="windowsPE">
+              <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+                <SetupUILanguage><UILanguage>en-US</UILanguage></SetupUILanguage>
+                <InputLocale>en-US</InputLocale><SystemLocale>en-US</SystemLocale><UILanguage>en-US</UILanguage><UserLocale>en-US</UserLocale>
+              </component>
+              <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+                <DiskConfiguration>
+                  <Disk wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"><DiskID>0</DiskID><WillWipeDisk>true</WillWipeDisk><CreatePartitions><CreatePartition wcm:action="add"><Order>1</Order><Type>Primary</Type><Size>100</Size></CreatePartition><CreatePartition wcm:action="add"><Order>2</Order><Type>Primary</Type><Extend>true</Extend></CreatePartition></CreatePartitions><ModifyPartitions><ModifyPartition wcm:action="add"><Order>1</Order><PartitionID>1</PartitionID><Format>NTFS</Format><Label>System</Label><Active>true</Active></ModifyPartition><ModifyPartition wcm:action="add"><Order>2</Order><PartitionID>2</PartitionID><Format>NTFS</Format><Label>Windows</Label><Letter>C</Letter></ModifyPartition></ModifyPartitions></Disk></DiskConfiguration>
+                <ImageInstall><OSImage><InstallTo><DiskID>0</DiskID><PartitionID>2</PartitionID></InstallTo><WillShowUI>OnError</WillShowUI></OSImage></ImageInstall>
+                <UserData><AcceptEula>true</AcceptEula><FullName>HASNITECH User</FullName><Organization>HASNITECH</Organization></UserData>
+              </component>
+            </settings>
+            <settings pass="specialize">
+              <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+                <ComputerName>HASNITECH-PC</ComputerName><TimeZone>UTC</TimeZone>
+              </component>
+            </settings>
+            <settings pass="oobeSystem">
+              <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+                <InputLocale>en-US</InputLocale><SystemLocale>en-US</SystemLocale><UILanguage>en-US</UILanguage><UserLocale>en-US</UserLocale>
+              </component>
+              <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+                <OOBE><HideEULAPage>true</HideEULAPage><HideLocalAccountScreen>true</HideLocalAccountScreen><HideOnlineAccountScreens>true</HideOnlineAccountScreens><NetworkLocation>Work</NetworkLocation><ProtectYourPC>3</ProtectYourPC></OOBE>
+                <UserAccounts><LocalAccounts><LocalAccount wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"><Name>Hasni</Name><Group>Administrators</Group><DisplayName>HASNITECH User</DisplayName><Password><Value>ChangeMe-4821!</Value><PlainText>true</PlainText></Password></LocalAccount></LocalAccounts></UserAccounts>
+                <AutoLogon><Password><Value>ChangeMe-4821!</Value><PlainText>true</PlainText></Password><Enabled>true</Enabled><Username>Hasni</Username><LogonCount>1</LogonCount></AutoLogon>
+              </component>
+            </settings>
+          </unattend>
+          XML
+          # The answer file contains a temporary local password. It is only for this generated image;
+          # the user should change it on first login.
+          genisoimage -quiet -output answer.iso -volid HASNI_UNATTEND -joliet -rock autounattend.xml
+      - name: Create virtual disk and run unattended Windows Setup
+        shell: bash
+        env:
+          DISK_GB: ${{ inputs.disk_size_gb }}
+        run: |
+          set -euo pipefail
+          qemu-img create -f qcow2 windows-hasnitech.qcow2 "${DISK_GB}G"
+          # Windows Setup runs without a display using the answer file; fail if QEMU exits abnormally.
+          # The guest may reboot automatically after installation, so use a bounded run time.
+          timeout --signal=TERM 10800s qemu-system-x86_64 \
+            -machine q35,accel=tcg -cpu max -smp 4 -m 6144 \
+            -drive file=windows-hasnitech.qcow2,if=ide,format=qcow2 \
+            -drive file=windows.iso,media=cdrom,readonly=on \
+            -drive file=answer.iso,media=cdrom,readonly=on \
+            -boot order=d -display none -serial none -monitor none -no-reboot || rc=$?
+          # timeout is expected after the installation window; retain the disk only if it exists.
+          test -s windows-hasnitech.qcow2
+          qemu-img check windows-hasnitech.qcow2
+          qemu-img info windows-hasnitech.qcow2
+      - name: Compress disk image for artifact delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          qemu-img convert -p -O qcow2 -c windows-hasnitech.qcow2 windows-hasnitech-compressed.qcow2
+          sha256sum windows-hasnitech-compressed.qcow2 > windows-hasnitech-compressed.qcow2.sha256
+      - name: Upload generated Windows disk image
+        uses: actions/upload-artifact@v4
+        with:
+          name: HASNITECH-Windows-QEMU-disk
+          path: |
+            windows-hasnitech-compressed.qcow2
+            windows-hasnitech-compressed.qcow2.sha256
+          if-no-files-found: error
+          retention-days: 7

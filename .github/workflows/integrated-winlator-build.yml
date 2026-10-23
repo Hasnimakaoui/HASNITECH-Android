@@ -2,7 +2,7 @@ name: Build HASNITECH with embedded Winlator runtime
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches: [qemu-integration]
 permissions:
   contents: write
 jobs:
@@ -12,6 +12,7 @@ jobs:
       - name: Checkout HASNITECH
         uses: actions/checkout@v4
         with:
+          ref: qemu-integration
           path: hasnitech
       - name: Checkout Winlator runtime source
         uses: actions/checkout@v4
