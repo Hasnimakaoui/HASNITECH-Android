@@ -250,8 +250,8 @@ jobs:
           }
           """)
           lib = root / "limbo-android-lib/build.gradle"
-          data = lib.read_text().replace("apply plugin: 'com.android.library'", "apply plugin: 'com.android.library'\\n")
-          data = data.replace("android {", "android {\\n    namespace 'com.limbo.emu.lib'\\n    compileSdkVersion 35")
+          data = lib.read_text().replace("apply plugin: 'com.android.library'", "apply plugin: 'com.android.library'\n")
+          data = data.replace("android {", "android {\n    namespace 'com.limbo.emu.lib'\n    compileSdkVersion 35")
           data = data.replace("    compileSdkVersion 29", "")
           data = data.replace("    buildToolsVersion '29.0.3'", "")
           data = data.replace("minSdkVersion 21", "minSdkVersion 23")
