@@ -175,7 +175,7 @@ jobs:
       - name: Build integrated QEMU APK
         working-directory: limbo
         run: /tmp/gradle-6.7.1/bin/gradle --no-daemon :limbo-android-x86:assembleDebug
-      - name: Validate APK actually contains dashboard and QEMU runtime
+      - name: Validate APK identity, dashboard, and native QEMU runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -183,38 +183,22 @@ jobs:
           test -s "$APK"
           unzip -t "$APK" | tail -n 2
           unzip -Z1 "$APK" > /tmp/apk-files.txt
-          grep -q '^AndroidManifest.xml          # The merged dashboard must be compiled into DEX, not merely copied as source.
-          for dex in $(grep -E '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt); do
-            unzip -p "$APK" "$dex" | strings | grep -q 'HasniTechDashboardActivity' && break
-          done
-          unzip -p "$APK" classes.dex >/dev/null
-          if ! grep -E '^lib/arm64-v8a/.*\.so$' /tmp/apk-files.txt >/dev/null && ! grep -Ei '(^|/)(qemu-system-[^/]+|qemu[^/]*\.so)$' /tmp/apk-files.txt >/dev/null; then
-            echo "ERROR: APK has no ARM64 native library or QEMU executable; refusing to publish a false-positive build."
-            exit 1
-          fi
-          echo "Dashboard and native QEMU runtime checks passed."
-      - name: Upload integrated QEMU APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: HASNITECH-QEMU-integrated-debug-APK
-          path: limbo/limbo-android-x86/build/outputs/apk/debug/limbo-android-x86-debug.apk
-          if-no-files-found: error
-          retention-days: 14
- /tmp/apk-files.txt
-          BADGING="$(/usr/local/lib/android/sdk/build-tools/29.0.3/aapt dump badging "$APK")"
+          AAPT="/usr/local/lib/android/sdk/build-tools/29.0.3/aapt"
+          BADGING="$("$AAPT" dump badging "$APK")"
           echo "$BADGING" | grep -F "package: name='com.hasnitech.launcher'"
           echo "$BADGING" | grep -F "application-label:'HASNITECH'"
-          # The merged dashboard must be compiled into DEX, not merely copied as source.
-          for dex in $(grep -E '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt); do
-            unzip -p "$APK" "$dex" | strings | grep -q 'HasniTechDashboardActivity' && break
-          done
-          unzip -p "$APK" classes.dex >/dev/null
-          if ! grep -E '^lib/arm64-v8a/.*\.so$' /tmp/apk-files.txt >/dev/null && ! grep -Ei '(^|/)(qemu-system-[^/]+|qemu[^/]*\.so)$' /tmp/apk-files.txt >/dev/null; then
-            echo "ERROR: APK has no ARM64 native library or QEMU executable; refusing to publish a false-positive build."
-            exit 1
-          fi
-          echo "Dashboard and native QEMU runtime checks passed."
+          grep -Eq '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt
+          FOUND_DASHBOARD=0
+          while IFS= read -r dex; do
+            if unzip -p "$APK" "$dex" | strings | grep -q 'HasniTechDashboardActivity'; then
+              FOUND_DASHBOARD=1
+              break
+            fi
+          done < <(grep -E '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt)
+          test "$FOUND_DASHBOARD" -eq 1 || { echo "Dashboard class missing from DEX"; exit 1; }
+          grep -q '^lib/arm64-v8a/liblimbo\.so$' /tmp/apk-files.txt
+          grep -q '^lib/arm64-v8a/libqemu-system-x86_64\.so$' /tmp/apk-files.txt
+          echo "APK identity, HASNITECH dashboard, and ARM64 QEMU libraries verified."
       - name: Upload integrated QEMU APK
         if: success()
         uses: actions/upload-artifact@v4
