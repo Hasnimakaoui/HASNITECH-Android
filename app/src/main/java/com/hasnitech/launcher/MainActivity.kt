@@ -345,10 +345,9 @@ private fun HasniTechDashboard() {
 
 @Composable
 private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, silver: Color, dim: Color, blue: Color) {
-    // The Winlator runtime is embedded in this APK under HASNITECH's package ID.
-    // Do not look for a separate "com.winlator" installation.
-    var runtimeInstalled by remember { mutableStateOf(true) }
-    var runtimeMessage by remember { mutableStateOf("محرك Wine/Box64 مدمج داخل HASNITECH. عند أول تشغيل قد تُنزّل ملفات بيئة التشغيل.") }
+    // Do not claim the runtime is integrated until its code is bundled and verified.
+    var runtimeInstalled by remember { mutableStateOf(false) }
+    var runtimeMessage by remember { mutableStateOf("محرك Windows غير مدمج بعد. لم يتم تشغيل QEMU أو Wine/Box64 من داخل هذه النسخة.") }
     var selectedExe by remember { mutableStateOf<android.net.Uri?>(null) }
     var selectedExeName by remember { mutableStateOf("") }
     val exePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -360,9 +359,8 @@ private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, s
     }
     fun openRuntime() {
         try {
-            context.startActivity(android.content.Intent(context, com.winlator.MainActivity::class.java))
-            runtimeInstalled = true
-            runtimeMessage = "تم فتح بيئة Wine/Box64 المدمجة. في أول تشغيل انتظر تنزيل ملفات النظام، ثم أنشئ حاوية لتشغيل البرامج."
+            runtimeInstalled = false
+            runtimeMessage = "لم يُربط محرك تشغيل داخل HASNITECH بعد. لن يتم فتح تطبيق خارجي أو الادعاء بأن QEMU يعمل قبل دمجه واختباره."
         } catch (e: Exception) {
             runtimeMessage = "تعذر فتح بيئة التشغيل المدمجة: ${e.message ?: "خطأ غير معروف"}"
         }
@@ -378,13 +376,13 @@ private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, s
                 Icon(Icons.Rounded.CheckCircle, null, tint = Color(0xFF26D07C))
                 Spacer(Modifier.width(9.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("المحرك مدمج داخل التطبيق", color = silver, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(if (runtimeInstalled) "محرك التشغيل جاهز" else "محرك التشغيل غير مدمج", color = silver, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     Text(runtimeMessage, color = dim, fontSize = 10.sp, lineHeight = 15.sp)
                 }
             }
         }
         Spacer(Modifier.height(12.dp))
-        Text("تشغيل برامج Windows يتم عبر Wine/Box64، وليس تثبيت نسخة Windows كاملة. أول تشغيل يحتاج اتصالًا بالإنترنت ومساحة كافية لتنزيل ملفات بيئة التشغيل.", color = silver, fontSize = 11.sp, lineHeight = 17.sp)
+        Text("لن تعمل ملفات EXE/MSI حتى يُدمج محرك متوافق ويُربط بهذه الواجهة. اختيار الملف هنا لا يشغّله وحده.", color = silver, fontSize = 11.sp, lineHeight = 17.sp)
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = { exePicker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Rounded.FolderOpen, null); Spacer(Modifier.width(7.dp)); Text(if (selectedExe == null) "اختيار برنامج Windows (EXE/MSI)" else "تغيير الملف المحدد")
@@ -399,7 +397,8 @@ private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, s
         }
         OutlinedButton(onClick = {
             runtimeInstalled = true
-            runtimeMessage = "بيئة التشغيل جزء من هذا التطبيق. اضغط تشغيل لفتحها."
+            runtimeInstalled = false
+            runtimeMessage = "لم يُعثر على محرك مدمج؛ لم يتم إجراء فحص وهمي."
         }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(6.dp)); Text("إعادة فحص بيئة التشغيل")
         }
