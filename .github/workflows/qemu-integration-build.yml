@@ -127,16 +127,18 @@ jobs:
           sudo apt-get install -y make autoconf automake git python3 binutils libtool-bin pkg-config flex bison gettext texinfo rsync patch curl wget xz-utils build-essential
           test -d "$NDK_ROOT"
           fetch_extract() {
-            url="$1"; archive="$2"; dirname="$3"; mode="$4"
+            url="$1"; archive="$2"; source_dir="$3"; target_dir="$4"; mode="$5"
             curl -fL --retry 4 --retry-delay 2 "$url" -o "/tmp/$archive"
             if [ "$mode" = xz ]; then tar -xJf "/tmp/$archive" -C /tmp; else tar -xzf "/tmp/$archive" -C /tmp; fi
-            mv "/tmp/$dirname" "$dirname"
+            test -d "/tmp/$source_dir"
+            rm -rf "$target_dir"
+            mv "/tmp/$source_dir" "$target_dir"
           }
-          fetch_extract https://download.qemu.org/qemu-5.1.0.tar.xz qemu-5.1.0.tar.xz qemu xz
-          fetch_extract https://ftp.gnome.org/pub/GNOME/sources/glib/2.56/glib-2.56.1.tar.xz glib-2.56.1.tar.xz glib xz
-          fetch_extract https://sourceware.org/pub/libffi/libffi-3.3.tar.gz libffi-3.3.tar.gz libffi gz
-          fetch_extract https://www.cairographics.org/releases/pixman-0.40.0.tar.gz pixman-0.40.0.tar.gz pixman gz
-          fetch_extract https://www.libsdl.org/release/SDL2-2.0.8.tar.gz SDL2-2.0.8.tar.gz SDL2 gz
+          fetch_extract https://download.qemu.org/qemu-5.1.0.tar.xz qemu-5.1.0.tar.xz qemu-5.1.0 qemu xz
+          fetch_extract https://ftp.gnome.org/pub/GNOME/sources/glib/2.56/glib-2.56.1.tar.xz glib-2.56.1.tar.xz glib-2.56.1 glib xz
+          fetch_extract https://sourceware.org/pub/libffi/libffi-3.3.tar.gz libffi-3.3.tar.gz libffi-3.3 libffi gz
+          fetch_extract https://www.cairographics.org/releases/pixman-0.40.0.tar.gz pixman-0.40.0.tar.gz pixman-0.40.0 pixman gz
+          fetch_extract https://www.libsdl.org/release/SDL2-2.0.8.tar.gz SDL2-2.0.8.tar.gz SDL2-2.0.8 SDL2 gz
           patch -d qemu -p1 < patches/qemu-5.1.0.patch
           patch -d glib -p1 < patches/glib-2.56.1.patch
           patch -d SDL2 -p1 < patches/sdl2-2.0.8.patch
