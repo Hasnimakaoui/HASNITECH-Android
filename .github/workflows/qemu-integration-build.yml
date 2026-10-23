@@ -61,6 +61,18 @@ jobs:
               raise SystemExit("Could not rename HASNITECH MainActivity safely")
           if "import android.content.Intent" not in code:
               code = code.replace("import android.os.Bundle", "import android.os.Bundle\nimport android.content.Intent")
+          # Wire the actual Windows page to the bundled Limbo/QEMU x86_64 emulator.
+          old_runtime = '1 -> WindowsRuntimePanel(context, cyan, Silver, Dim, blue)'
+          new_runtime = '''1 -> Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                              Button(onClick = { context.startActivity(Intent(context, com.limbo.emu.main.LimboEmuActivity::class.java)) },
+                                  modifier = Modifier.fillMaxWidth()) { Text("فتح محاكي Windows / QEMU") }
+                              WindowsRuntimePanel(context, cyan, Silver, Dim, blue)
+                          }'''
+          if old_runtime not in code:
+              raise SystemExit("Windows runtime page target not found; refusing to build a dashboard with no emulator launch action")
+          code = code.replace(old_runtime, new_runtime, 1)
+          code = code.replace("محرك Windows غير مدمج داخل HASNITECH. لم يتم تشغيل QEMU أو Wine/Box64.", "محرك QEMU x86_64 مدمج. افتح المحاكي وأنشئ آلة افتراضية وحدد صورة قرص Windows.")
+          code = code.replace("محرك التشغيل غير مدمج", "محرك QEMU مدمج")
           if "import androidx.compose.foundation.clickable" not in code:
               code = code.replace("import androidx.compose.foundation.Canvas", "import androidx.compose.foundation.Canvas\nimport androidx.compose.foundation.clickable")
           if "import androidx.compose.ui.platform.LocalContext" not in code:
