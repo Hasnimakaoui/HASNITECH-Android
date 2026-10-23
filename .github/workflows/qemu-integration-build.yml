@@ -16,6 +16,7 @@ jobs:
       - name: Checkout HASNITECH
         uses: actions/checkout@v4
         with:
+          ref: qemu-integration-corrected
           path: hasnitech
       - name: Checkout QEMU Android frontend (Limbo)
         uses: actions/checkout@v4
