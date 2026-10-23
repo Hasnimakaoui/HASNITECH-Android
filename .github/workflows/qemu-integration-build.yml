@@ -72,7 +72,7 @@ jobs:
           else:
               print("NOTE: dashboard Windows card click target not found; dashboard will still be built")
 
-          for module in ("limbo-android-arm",):
+          for module in ("limbo-android-x86",):
               target = root / module / "src/main/java/com/hasnitech/launcher/HasniTechDashboardActivity.kt"
               target.parent.mkdir(parents=True, exist_ok=True)
               target.write_text(code)
@@ -147,15 +147,15 @@ jobs:
           export BUILD_THREADS="$(nproc)"
           make limbo
           test -s ../jniLibs/arm64-v8a/liblimbo.so
-          test -s ../../../../limbo-android-arm/src/main/jniLibs/arm64-v8a/libqemu-system-x86_64.so
+          test -s ../../../../limbo-android-x86/src/main/jniLibs/arm64-v8a/libqemu-system-x86_64.so
       - name: Build integrated QEMU APK
         working-directory: limbo
-        run: /tmp/gradle-6.7.1/bin/gradle --no-daemon :limbo-android-arm:assembleDebug
+        run: /tmp/gradle-6.7.1/bin/gradle --no-daemon :limbo-android-x86:assembleDebug
       - name: Validate APK actually contains dashboard and QEMU runtime
         shell: bash
         run: |
           set -euo pipefail
-          APK="limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk"
+          APK="limbo/limbo-android-x86/build/outputs/apk/debug/limbo-android-x86-debug.apk"
           test -s "$APK"
           unzip -t "$APK" | tail -n 2
           unzip -Z1 "$APK" > /tmp/apk-files.txt
@@ -175,6 +175,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: HASNITECH-QEMU-integrated-debug-APK
-          path: limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk
+          path: limbo/limbo-android-x86/build/outputs/apk/debug/limbo-android-x86-debug.apk
           if-no-files-found: error
           retention-days: 14
