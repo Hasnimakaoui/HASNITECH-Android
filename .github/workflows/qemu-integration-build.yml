@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '11'
+          java-version: '17'
       - name: Install Android SDK packages
         shell: bash
         env:
@@ -134,7 +134,7 @@ jobs:
               data = data.replace("jcenter()", "mavenCentral()")
               path.write_text(data)
           PY
-          curl -fsSL https://services.gradle.org/distributions/gradle-6.7.1-bin.zip -o /tmp/gradle.zip
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp
       - name: Build and package real ARM64 QEMU engine
         shell: bash
@@ -172,9 +172,92 @@ jobs:
           make limbo
           test -s ../jniLibs/arm64-v8a/liblimbo.so
           test -s ../../../../limbo-android-x86/src/main/jniLibs/arm64-v8a/libqemu-system-x86_64.so
+      - name: Configure modern Kotlin Compose build for HASNITECH dashboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path("limbo")
+          (root / "build.gradle").write_text("""buildscript {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.7.3'
+                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21'
+                  classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.0.21'
+              }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          """)
+          (root / "settings.gradle").write_text("""pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() }
+          }
+          rootProject.name = 'HASNITECH-QEMU'
+          include ':limbo-android-lib', ':limbo-android-x86'
+          """)
+          app = root / "limbo-android-x86/build.gradle"
+          app.write_text("""apply plugin: 'com.android.application'
+          apply plugin: 'org.jetbrains.kotlin.android'
+          apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+          android {
+              namespace 'com.hasnitech.launcher'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'com.hasnitech.launcher'
+                  minSdk 23
+                  targetSdk 28
+                  versionCode 1
+                  versionName '1.0'
+                  ndk { abiFilters 'arm64-v8a' }
+              }
+              buildTypes {
+                  debug { jniDebuggable true }
+                  release { minifyEnabled false }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = '17' }
+              buildFeatures { compose true }
+              sourceSets { main { jniLibs.srcDirs = ['src/main/jniLibs'] } }
+          }
+          dependencies {
+              implementation project(':limbo-android-lib')
+              implementation 'androidx.core:core-ktx:1.15.0'
+              implementation 'androidx.activity:activity-compose:1.9.3'
+              implementation platform('androidx.compose:compose-bom:2024.10.01')
+              implementation 'androidx.compose.ui:ui'
+              implementation 'androidx.compose.ui:ui-graphics'
+              implementation 'androidx.compose.ui:ui-tooling-preview'
+              implementation 'androidx.compose.foundation:foundation'
+              implementation 'androidx.compose.material3:material3'
+              implementation 'androidx.compose.material:material-icons-extended'
+              implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+              debugImplementation 'androidx.compose.ui:ui-tooling'
+          }
+          """)
+          lib = root / "limbo-android-lib/build.gradle"
+          data = lib.read_text().replace("apply plugin: 'com.android.library'", "apply plugin: 'com.android.library'\\n")
+          data = data.replace("android {", "android {\\n    namespace 'com.max2idea.android.limbo'\\n    compileSdkVersion 35")
+          data = data.replace("    compileSdkVersion 29", "")
+          data = data.replace("    buildToolsVersion '29.0.3'", "")
+          data = data.replace("minSdkVersion 21", "minSdkVersion 23")
+          data = data.replace("targetSdkVersion 29", "targetSdkVersion 28")
+          data = data.replace("jcenter()", "mavenCentral()")
+          lib.write_text(data)
+          manifest = root / "limbo-android-x86/src/main/AndroidManifest.xml"
+          xml = manifest.read_text().replace('package="com.hasnitech.launcher"', '')
+          manifest.write_text(xml)
+          print("Modern Compose toolchain configured for HASNITECH launcher.")
+          PY
       - name: Build integrated QEMU APK
         working-directory: limbo
-        run: /tmp/gradle-6.7.1/bin/gradle --no-daemon :limbo-android-x86:assembleDebug
+        run: /tmp/gradle-8.9/bin/gradle --no-daemon :limbo-android-x86:assembleDebug
       - name: Validate APK identity, dashboard, and native QEMU runtime
         shell: bash
         run: |
