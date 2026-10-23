@@ -99,6 +99,29 @@ jobs:
               xml = xml[:match.start()] + dashboard_activity + "\n" + limbo_activity + xml[match.end():]
               manifest.write_text(xml)
           PY
+      - name: Preserve HASNITECH app identity in the QEMU package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          gradle = Path('limbo/limbo-android-x86/build.gradle')
+          data = gradle.read_text()
+          data, n = re.subn(r'applicationId\s+"[^"]+"', 'applicationId "com.hasnitech.launcher"', data, count=1)
+          if n != 1:
+              raise SystemExit('Could not set HASNITECH applicationId')
+          gradle.write_text(data)
+
+          manifest = Path('limbo/limbo-android-x86/src/main/AndroidManifest.xml')
+          xml = manifest.read_text()
+          xml = xml.replace('package="com.limbo.emu.main"', 'package="com.hasnitech.launcher"')
+          xml = xml.replace('android:label="Limbo x86 PC Emulator"', 'android:label="HASNITECH"')
+          xml = xml.replace('android:label="Limbo x86"', 'android:label="HASNITECH"')
+          manifest.write_text(xml)
+          print('Configured package ID and visible app labels for HASNITECH.')
+          PY
       - name: Patch legacy repositories and install compatible Gradle
         shell: bash
         run: |
@@ -159,7 +182,28 @@ jobs:
           test -s "$APK"
           unzip -t "$APK" | tail -n 2
           unzip -Z1 "$APK" > /tmp/apk-files.txt
-          grep -q '^AndroidManifest.xml$' /tmp/apk-files.txt
+          grep -q '^AndroidManifest.xml          # The merged dashboard must be compiled into DEX, not merely copied as source.
+          for dex in $(grep -E '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt); do
+            unzip -p "$APK" "$dex" | strings | grep -q 'HasniTechDashboardActivity' && break
+          done
+          unzip -p "$APK" classes.dex >/dev/null
+          if ! grep -E '^lib/arm64-v8a/.*\.so$' /tmp/apk-files.txt >/dev/null && ! grep -Ei '(^|/)(qemu-system-[^/]+|qemu[^/]*\.so)$' /tmp/apk-files.txt >/dev/null; then
+            echo "ERROR: APK has no ARM64 native library or QEMU executable; refusing to publish a false-positive build."
+            exit 1
+          fi
+          echo "Dashboard and native QEMU runtime checks passed."
+      - name: Upload integrated QEMU APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HASNITECH-QEMU-integrated-debug-APK
+          path: limbo/limbo-android-x86/build/outputs/apk/debug/limbo-android-x86-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+ /tmp/apk-files.txt
+          BADGING="$(/usr/local/lib/android/sdk/build-tools/29.0.3/aapt dump badging "$APK")"
+          echo "$BADGING" | grep -F "package: name='com.hasnitech.launcher'"
+          echo "$BADGING" | grep -F "application-label:'HASNITECH'"
           # The merged dashboard must be compiled into DEX, not merely copied as source.
           for dex in $(grep -E '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt); do
             unzip -p "$APK" "$dex" | strings | grep -q 'HasniTechDashboardActivity' && break
