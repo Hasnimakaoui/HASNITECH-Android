@@ -20,3 +20,7 @@ The Android QEMU build does not itself install Windows. This repository intentio
 For ARM64 Android, the app's QEMU engine is a **host ARM64, x86_64 guest** emulator using software translation. Performance for a full x86_64 Windows desktop on mid-range mobile hardware may be very poor. This is a technical constraint, not a dashboard setting.
 
 The release is not considered "Windows preinstalled" until a Windows disk image is packaged or provisioned and an actual guest boot is verified. Do not label a QEMU-only APK as a Windows installation.
+
+## Automated Windows disk build entry point
+
+The Android APK build and the guest operating-system image are separate deliverables. The current QEMU APK workflow only builds the emulator; it must not be treated as a preinstalled Windows image. A Windows disk image can only be generated from valid Windows installation media and then verified by booting that image in QEMU. Do not upload or publish an image unless the workflow has completed the installation and a guest-boot verification step.
