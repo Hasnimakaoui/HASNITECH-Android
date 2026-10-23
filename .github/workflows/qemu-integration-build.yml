@@ -42,41 +42,61 @@ jobs:
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-29" "build-tools;29.0.3" "ndk;21.4.7075529"
-      - name: Integrate HASNITECH dashboard as launcher and retain QEMU emulator
+      - name: Integrate HASNITECH dashboard as launcher
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import re
+
           root = Path("limbo")
           source = Path("hasnitech/app/src/main/java/com/hasnitech/launcher/MainActivity.kt")
           if not source.exists():
               raise SystemExit("HASNITECH dashboard source not found")
           code = source.read_text()
-          code = code.replace("class MainActivity : ComponentActivity()", "class HasniTechDashboardActivity : ComponentActivity()")
-          code = code.replace("setContent { HasniTechDashboard() }", "setContent { HasniTechDashboard() }")
-          # Open Limbo's own configuration screen from the dashboard's Windows launch card.
+          code, count = re.subn(r'\bclass\s+MainActivity\s*:', 'class HasniTechDashboardActivity :', code, count=1)
+          if count != 1:
+              raise SystemExit("Could not rename HASNITECH MainActivity safely")
+          if "import android.content.Intent" not in code:
+              code = code.replace("import android.os.Bundle", "import android.os.Bundle\nimport android.content.Intent")
+          if "import androidx.compose.foundation.clickable" not in code:
+              code = code.replace("import androidx.compose.foundation.Canvas", "import androidx.compose.foundation.Canvas\nimport androidx.compose.foundation.clickable")
+          if "import androidx.compose.ui.platform.LocalContext" not in code:
+              code = code.replace("import androidx.compose.ui.unit.dp", "import androidx.compose.ui.platform.LocalContext\nimport androidx.compose.ui.unit.dp")
           code = code.replace("fun HasniTechApp() {", "fun HasniTechApp() {\n    val context = LocalContext.current")
           old = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp)).padding(16.dp)) {'
           new = '.background(Panel).border(1.dp, Color(0xFF1B3A60), RoundedCornerShape(20.dp)).clickable { context.startActivity(Intent(context, com.max2idea.android.limbo.main.LimboSettingsManager::class.java)) }.padding(16.dp)) {'
           if old in code:
               code = code.replace(old, new, 1)
-          if "import android.content.Intent" not in code:
-              code = code.replace("import android.os.Bundle", "import android.os.Bundle\nimport android.content.Intent")
-          if "import androidx.compose.foundation.clickable" not in code:
-              code = code.replace("import androidx.compose.foundation.Canvas", "import androidx.compose.foundation.Canvas\nimport androidx.compose.foundation.clickable")
-          # Build the dashboard into both ARM (for modern phones) and x86 variants.
-          for module in ("limbo-android-arm", "limbo-android-x86"):
+          else:
+              print("NOTE: dashboard Windows card click target not found; dashboard will still be built")
+
+          for module in ("limbo-android-arm",):
               target = root / module / "src/main/java/com/hasnitech/launcher/HasniTechDashboardActivity.kt"
               target.parent.mkdir(parents=True, exist_ok=True)
               target.write_text(code)
               manifest = root / module / "src/main/AndroidManifest.xml"
               xml = manifest.read_text()
-              # Remove any existing launcher filters from LimboEmuActivity first.
-              xml = re.sub(r'(<activity\s+android:name="LimboEmuActivity"[^>]*>.*?)\s*<intent-filter>\s*<action android:name="android.intent.action.MAIN"\s*/>\s*<category android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>', r'\1', xml, flags=re.S, count=1)
-              if "com.hasnitech.launcher.HasniTechDashboardActivity" not in xml:
-                  xml = re.sub(r'<activity\s+android:name="LimboEmuActivity"', '<activity android:name="com.hasnitech.launcher.HasniTechDashboardActivity" android:exported="true" android:screenOrientation="landscape"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>\\n        <activity android:name="LimboEmuActivity"', xml, count=1)
+              # Match both relative and fully qualified Limbo activity names.
+              activity_pat = r'<activity\b[^>]*android:name="(?:[^"]*\.)?LimboEmuActivity"[^>]*>.*?</activity>'
+              match = re.search(activity_pat, xml, flags=re.S)
+              if not match:
+                  raise SystemExit(f"Limbo launcher activity not found in {manifest}")
+              limbo_activity = match.group(0)
+              limbo_activity = re.sub(
+                  r'\s*<intent-filter>\s*<action\s+android:name="android.intent.action.MAIN"\s*/>\s*<category\s+android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>',
+                  '', limbo_activity, flags=re.S)
+              dashboard_activity = '''
+              <activity android:name="com.hasnitech.launcher.HasniTechDashboardActivity"
+                  android:exported="true" android:screenOrientation="landscape">
+                  <intent-filter>
+                      <action android:name="android.intent.action.MAIN"/>
+                      <category android:name="android.intent.category.LAUNCHER"/>
+                  </intent-filter>
+              </activity>
+              '''
+              xml = xml[:match.start()] + dashboard_activity + "\n" + limbo_activity + xml[match.end():]
               manifest.write_text(xml)
           PY
       - name: Patch legacy repositories and install compatible Gradle
@@ -94,15 +114,31 @@ jobs:
           unzip -q /tmp/gradle.zip -d /tmp
       - name: Build integrated QEMU APK
         working-directory: limbo
-        run: /tmp/gradle-6.7.1/bin/gradle --no-daemon assembleDebug
-      - name: Verify APK exists
+        run: /tmp/gradle-6.7.1/bin/gradle --no-daemon :limbo-android-arm:assembleDebug
+      - name: Validate APK actually contains dashboard and QEMU runtime
+        shell: bash
         run: |
-          test -s limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk
-          ls -lh limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk
-      - name: Upload QEMU APK
+          set -euo pipefail
+          APK="limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk"
+          test -s "$APK"
+          unzip -t "$APK" | tail -n 2
+          unzip -Z1 "$APK" > /tmp/apk-files.txt
+          grep -q '^AndroidManifest.xml$' /tmp/apk-files.txt
+          # The merged dashboard must be compiled into DEX, not merely copied as source.
+          for dex in $(grep -E '^classes([0-9]+)?\.dex$' /tmp/apk-files.txt); do
+            unzip -p "$APK" "$dex" | strings | grep -q 'HasniTechDashboardActivity' && break
+          done
+          unzip -p "$APK" classes.dex >/dev/null
+          if ! grep -E '^lib/arm64-v8a/.*\.so$' /tmp/apk-files.txt >/dev/null && ! grep -Ei '(^|/)(qemu-system-[^/]+|qemu[^/]*\.so)$' /tmp/apk-files.txt >/dev/null; then
+            echo "ERROR: APK has no ARM64 native library or QEMU executable; refusing to publish a false-positive build."
+            exit 1
+          fi
+          echo "Dashboard and native QEMU runtime checks passed."
+      - name: Upload integrated QEMU APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: HASNITECH-QEMU-debug-APK
+          name: HASNITECH-QEMU-integrated-debug-APK
           path: limbo/limbo-android-arm/build/outputs/apk/debug/limbo-android-arm-debug.apk
           if-no-files-found: error
           retention-days: 14
