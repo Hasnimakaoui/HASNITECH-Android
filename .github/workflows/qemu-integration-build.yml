@@ -172,6 +172,14 @@ jobs:
           make limbo
           test -s ../jniLibs/arm64-v8a/liblimbo.so
           test -s ../../../../limbo-android-x86/src/main/jniLibs/arm64-v8a/libqemu-system-x86_64.so
+      - name: Remove obsolete Android Gradle build-cache flag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f limbo/gradle.properties ]; then
+            sed -i '/^[[:space:]]*android\.enableBuildCache[[:space:]]*=/d' limbo/gradle.properties
+            ! grep -q 'android.enableBuildCache' limbo/gradle.properties
+          fi
       - name: Configure modern Kotlin Compose build for HASNITECH dashboard
         shell: bash
         run: |
