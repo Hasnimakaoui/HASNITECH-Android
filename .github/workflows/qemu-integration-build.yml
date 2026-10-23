@@ -124,7 +124,7 @@ jobs:
         run: |
           set -euxo pipefail
           sudo apt-get update
-          sudo apt-get install -y make autoconf automake git python3 binutils libtool-bin pkg-config flex bison gettext texinfo rsync patch curl wget xz-utils build-essential
+          sudo apt-get install -y make autoconf automake git python3 binutils libtool-bin pkg-config flex bison gettext texinfo gtk-doc-tools rsync patch curl wget xz-utils build-essential
           test -d "$NDK_ROOT"
           fetch_extract() {
             url="$1"; archive="$2"; source_dir="$3"; target_dir="$4"; mode="$5"
