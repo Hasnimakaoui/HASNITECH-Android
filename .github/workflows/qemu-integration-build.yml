@@ -97,6 +97,12 @@ jobs:
               if not match:
                   raise SystemExit(f"Limbo launcher activity not found in {manifest}")
               limbo_activity = match.group(0)
+              # The app manifest package is changed to com.hasnitech.launcher later.
+              # Keep Limbo's Activity explicitly qualified so Android resolves the real class.
+              limbo_activity = re.sub(
+                  r'android:name="(?:[^"]*\\.)?LimboEmuActivity"',
+                  'android:name="com.limbo.emu.main.LimboEmuActivity"',
+                  limbo_activity, count=1)
               limbo_activity = re.sub(
                   r'\s*<intent-filter>\s*<action\s+android:name="android.intent.action.MAIN"\s*/>\s*<category\s+android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>',
                   '', limbo_activity, flags=re.S)
