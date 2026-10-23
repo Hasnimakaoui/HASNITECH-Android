@@ -345,24 +345,14 @@ private fun HasniTechDashboard() {
 
 @Composable
 private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, silver: Color, dim: Color, blue: Color) {
-    // Do not claim the runtime is integrated until its code is bundled and verified.
-    var runtimeInstalled by remember { mutableStateOf(false) }
-    var runtimeMessage by remember { mutableStateOf("محرك Windows غير مدمج بعد. لم يتم تشغيل QEMU أو Wine/Box64 من داخل هذه النسخة.") }
+    var runtimeMessage by remember { mutableStateOf("محرك Windows غير مدمج داخل HASNITECH. لم يتم تشغيل QEMU أو Wine/Box64.") }
     var selectedExe by remember { mutableStateOf<android.net.Uri?>(null) }
     var selectedExeName by remember { mutableStateOf("") }
     val exePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             selectedExe = uri
             selectedExeName = uri.lastPathSegment?.substringAfterLast('/')?.take(90) ?: "ملف Windows"
-            runtimeMessage = "تم اختيار الملف. افتح بيئة Windows ثم استخدم مدير الملفات داخلها للوصول إلى ملف البرنامج."
-        }
-    }
-    fun openRuntime() {
-        try {
-            runtimeInstalled = false
-            runtimeMessage = "لم يُربط محرك تشغيل داخل HASNITECH بعد. لن يتم فتح تطبيق خارجي أو الادعاء بأن QEMU يعمل قبل دمجه واختباره."
-        } catch (e: Exception) {
-            runtimeMessage = "تعذر فتح بيئة التشغيل المدمجة: ${e.message ?: "خطأ غير معروف"}"
+            runtimeMessage = "تم اختيار الملف فقط؛ لم يتم تشغيله. يلزم محرك Windows متوافق."
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -373,34 +363,45 @@ private fun WindowsRuntimePanel(context: android.content.Context, cyan: Color, s
         Spacer(Modifier.height(12.dp))
         Surface(color = Color(0x3326D07C), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF26D07C))) {
             Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.CheckCircle, null, tint = Color(0xFF26D07C))
+                Icon(Icons.Rounded.Info, null, tint = Color(0xFF26D07C))
                 Spacer(Modifier.width(9.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(if (runtimeInstalled) "محرك التشغيل جاهز" else "محرك التشغيل غير مدمج", color = silver, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("محرك التشغيل غير مدمج", color = silver, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     Text(runtimeMessage, color = dim, fontSize = 10.sp, lineHeight = 15.sp)
                 }
             }
         }
         Spacer(Modifier.height(12.dp))
-        Text("لن تعمل ملفات EXE/MSI حتى يُدمج محرك متوافق ويُربط بهذه الواجهة. اختيار الملف هنا لا يشغّله وحده.", color = silver, fontSize = 11.sp, lineHeight = 17.sp)
+        Text("اختيار ملف EXE أو MSI لا يشغّله وحده. هذه النسخة لا تحتوي حتى الآن على محرك Windows مدمج.", color = silver, fontSize = 11.sp, lineHeight = 17.sp)
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = { exePicker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Rounded.FolderOpen, null); Spacer(Modifier.width(7.dp)); Text(if (selectedExe == null) "اختيار برنامج Windows (EXE/MSI)" else "تغيير الملف المحدد")
         }
         if (selectedExe != null) {
             Text("الملف المحدد: $selectedExeName", color = cyan, fontSize = 10.sp)
-            Text("بعد فتح البيئة، استخدم مدير الملفات داخلها للوصول إلى الملف المحدد أو انسخه إلى مجلد Downloads.", color = dim, fontSize = 9.sp, lineHeight = 13.sp)
         }
         Spacer(Modifier.height(8.dp))
-        Button(onClick = { openRuntime() }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
-            Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("تشغيل بيئة Windows المدمجة", fontSize = 11.sp)
+        Button(onClick = {
+            try {
+                val intent = context.packageManager.getLaunchIntentForPackage("com.winlator")
+                if (intent != null) {
+                    context.startActivity(intent)
+                    runtimeMessage = "تم فتح Winlator كتطبيق مستقل؛ لم يتم دمجه داخل HASNITECH."
+                } else {
+                    runtimeMessage = "Winlator غير مثبت. ستفتح صفحة الإصدارات لتنزيله كتطبيق مستقل."
+                    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/brunodev85/winlator/releases")))
+                }
+            } catch (_: Exception) {
+                runtimeMessage = "تعذر فتح Winlator أو صفحة الإصدارات."
+            }
+        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF123A66), contentColor = cyan)) {
+            Icon(Icons.Rounded.OpenInBrowser, null); Spacer(Modifier.width(6.dp)); Text("فتح Winlator كتطبيق مستقل", fontSize = 11.sp)
         }
         OutlinedButton(onClick = {
-            runtimeInstalled = true
-            runtimeInstalled = false
-            runtimeMessage = "لم يُعثر على محرك مدمج؛ لم يتم إجراء فحص وهمي."
+            val installed = try { context.packageManager.getLaunchIntentForPackage("com.winlator") != null } catch (_: Exception) { false }
+            runtimeMessage = if (installed) "تم العثور على تطبيق Winlator مستقل. هذا لا يعني أنه مدمج داخل HASNITECH." else "لم يُعثر على Winlator بالحزمة المعروفة. محرك Windows غير مدمج."
         }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(6.dp)); Text("إعادة فحص بيئة التشغيل")
+            Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(6.dp)); Text("فحص وجود Winlator")
         }
     }
 }
