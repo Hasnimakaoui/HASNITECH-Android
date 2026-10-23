@@ -112,6 +112,40 @@ jobs:
           PY
           curl -fsSL https://services.gradle.org/distributions/gradle-6.7.1-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp
+      - name: Build and package real ARM64 QEMU engine
+        shell: bash
+        working-directory: limbo/limbo-android-lib/src/main/jni
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          NDK_ROOT: /usr/local/lib/android/sdk/ndk/23.1.7779620
+          BUILD_HOST: arm64-v8a
+          BUILD_GUEST: x86_64-softmmu
+          USE_QEMU_VERSION: 5.1.0
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y make autoconf automake git python3 binutils libtool-bin pkg-config flex bison gettext texinfo rsync patch curl wget xz-utils build-essential
+          test -d "$NDK_ROOT"
+          fetch_extract() {
+            url="$1"; archive="$2"; dirname="$3"; mode="$4"
+            curl -fL --retry 4 --retry-delay 2 "$url" -o "/tmp/$archive"
+            if [ "$mode" = xz ]; then tar -xJf "/tmp/$archive" -C /tmp; else tar -xzf "/tmp/$archive" -C /tmp; fi
+            mv "/tmp/$dirname" "$dirname"
+          }
+          fetch_extract https://download.qemu.org/qemu-5.1.0.tar.xz qemu-5.1.0.tar.xz qemu xz
+          fetch_extract https://ftp.gnome.org/pub/GNOME/sources/glib/2.56/glib-2.56.1.tar.xz glib-2.56.1.tar.xz glib xz
+          fetch_extract https://sourceware.org/pub/libffi/libffi-3.3.tar.gz libffi-3.3.tar.gz libffi gz
+          fetch_extract https://www.cairographics.org/releases/pixman-0.40.0.tar.gz pixman-0.40.0.tar.gz pixman gz
+          fetch_extract https://www.libsdl.org/release/SDL2-2.0.8.tar.gz SDL2-2.0.8.tar.gz SDL2 gz
+          patch -d qemu -p1 < patches/qemu-5.1.0.patch
+          patch -d glib -p1 < patches/glib-2.56.1.patch
+          patch -d SDL2 -p1 < patches/sdl2-2.0.8.patch
+          export PATH="$NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          export ANDROID_NDK_HOME="$NDK_ROOT"
+          export BUILD_THREADS="$(nproc)"
+          make limbo
+          test -s ../jniLibs/arm64-v8a/liblimbo.so
+          test -s ../../../../limbo-android-arm/src/main/jniLibs/arm64-v8a/libqemu-system-x86_64.so
       - name: Build integrated QEMU APK
         working-directory: limbo
         run: /tmp/gradle-6.7.1/bin/gradle --no-daemon :limbo-android-arm:assembleDebug
