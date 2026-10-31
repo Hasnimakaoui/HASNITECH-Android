@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#160615"><title>Xora live — تسجيل الدخول</title>
+<style>
+*{box-sizing:border-box} body{margin:0;background:#100711;color:#fff;font-family:Arial,Tahoma,sans-serif;min-height:100vh}
+:root{--pink:#ff2b9d;--violet:#a42cff;--muted:#c9b7c9}
+.screen{min-height:100vh;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#6b1455 0,#210b25 38%,#100711 78%);padding:28px 20px 34px;display:flex;flex-direction:column;align-items:center}
+.screen:before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(255,43,157,.18),transparent 55%);pointer-events:none}
+.glow{position:absolute;width:290px;height:290px;border-radius:50%;background:#fa168d;filter:blur(110px);opacity:.22;top:5%;left:-120px}
+.content{position:relative;z-index:1;width:100%;max-width:430px;margin:auto}
+.brand{text-align:center;margin:4px 0 25px}
+.logo{width:66px;height:66px;margin:0 auto 10px;border-radius:22px;background:linear-gradient(145deg,#ff58b4,#8d26ed);display:grid;place-items:center;box-shadow:0 8px 35px #ff168955;font-size:34px}
+.brand h1{font-size:34px;letter-spacing:-1px;margin:0;font-weight:900} .brand h1 span{color:#ff3ba9}
+.brand p{margin:8px 0 0;color:#e6c9e0;font-size:14px}
+.panel{background:rgba(24,10,27,.86);border:1px solid rgba(255,118,205,.25);border-radius:27px;padding:23px 19px;box-shadow:0 20px 70px #0008;backdrop-filter:blur(18px)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;padding:5px;background:#100812;border-radius:15px;margin-bottom:22px;gap:5px}
+.tabs button{border:0;border-radius:11px;padding:12px 5px;color:#cbb6c9;background:transparent;font-size:15px;font-weight:700;cursor:pointer}
+.tabs button.active{background:linear-gradient(100deg,#f6299c,#a52bdf);color:white;box-shadow:0 5px 18px #df248c55}
+h2{font-size:23px;margin:0 0 7px} .hint{color:#c7b4c8;font-size:13px;margin:0 0 20px}
+.field{margin:0 0 14px} label{display:block;font-size:13px;color:#f0d9ed;margin:0 0 8px}
+input{width:100%;height:51px;border-radius:13px;border:1px solid #55314f;background:#160d19;color:#fff;padding:0 14px;font-size:15px;outline:none}
+input:focus{border-color:#ff42aa;box-shadow:0 0 0 3px #ff2b9d20} input::placeholder{color:#927d91}
+.password-wrap{position:relative} .password-wrap input{padding-left:48px} .show{position:absolute;left:12px;top:14px;background:none;border:0;color:#d8a9ce;font-size:12px;cursor:pointer}
+.forgot{display:block;text-align:left;color:#ff78c2;text-decoration:none;font-size:13px;margin:0 2px 17px}
+.submit{width:100%;height:53px;border:0;border-radius:15px;background:linear-gradient(100deg,#ff279b,#a52be8);color:white;font-size:16px;font-weight:800;box-shadow:0 9px 25px #e5269250;cursor:pointer}
+.sep{display:flex;align-items:center;gap:12px;color:#9f899f;font-size:12px;margin:19px 0} .sep:before,.sep:after{content:"";height:1px;background:#52344e;flex:1}
+.guest{width:100%;height:48px;border:1px solid #75456d;border-radius:14px;background:#241328;color:#f5d7ef;font-weight:700;font-size:14px;cursor:pointer}
+.terms{font-size:11px;line-height:1.8;color:#9f8c9f;text-align:center;margin:17px 5px 0} .terms a{color:#ff78c2;text-decoration:none}
+.notice{display:none;margin-top:13px;padding:11px;border-radius:12px;background:#3b1734;color:#ffd9f0;font-size:13px;text-align:center}
+@media(max-height:760px){.screen{padding-top:18px;padding-bottom:18px} .brand{margin-bottom:16px} .logo{width:54px;height:54px;font-size:28px} .panel{padding:18px} .field{margin-bottom:10px} input{height:47px}}
+</style></head>
+<body><main class="screen"><div class="glow"></div><div class="content">
+<header class="brand"><div class="logo">♡</div><h1><span>Xora</span> live</h1><p>عِش اللحظة… تواصل وشارك بثك المباشر</p></header>
+<section class="panel">
+<div class="tabs"><button id="loginTab" class="active" type="button" onclick="setMode('login')">تسجيل الدخول</button><button id="signupTab" type="button" onclick="setMode('signup')">إنشاء حساب</button></div>
+<h2 id="heading">مرحباً بعودتك 👋</h2><p class="hint" id="subheading">سجّل الدخول لمتابعة البثوث والدردشة</p>
+<form id="authForm" onsubmit="event.preventDefault();document.getElementById('notice').style.display='block';document.getElementById('notice').textContent='هذه واجهة تجريبية للفحص؛ اربطها بخدمة الحسابات لتفعيل الدخول الفعلي.'">
+<div class="field" id="nameField" style="display:none"><label for="name">اسم المستخدم</label><input id="name" placeholder="اكتب اسمك" autocomplete="name"></div>
+<div class="field"><label for="email">البريد الإلكتروني</label><input id="email" type="email" placeholder="name@example.com" autocomplete="email" required></div>
+<div class="field"><label for="password">كلمة المرور</label><div class="password-wrap"><input id="password" type="password" placeholder="أدخل كلمة المرور" autocomplete="current-password" minlength="6" required><button class="show" type="button" onclick="togglePassword()">إظهار</button></div></div>
+<a class="forgot" href="#" onclick="event.preventDefault();showNotice('استعادة كلمة المرور تُفعّل عند ربط نظام الحسابات.')">نسيت كلمة المرور؟</a>
+<button class="submit" id="submitBtn" type="submit">دخول إلى Xora live</button>
+</form>
+<div class="sep">أو</div><button class="guest" type="button" onclick="showNotice('يمكن إضافة الدخول كزائر وربطه بإعدادات التطبيق.')">المتابعة كزائر</button>
+<div class="notice" id="notice"></div>
+</section>
+<p class="terms">بالمتابعة، أنت توافق على <a href="#">شروط الاستخدام</a> و<a href="#">سياسة الخصوصية</a>.</p>
+</div></main>
+<script>
+let mode='login';
+function setMode(m){mode=m;const signup=m==='signup';document.getElementById('loginTab').classList.toggle('active',!signup);document.getElementById('signupTab').classList.toggle('active',signup);document.getElementById('heading').textContent=signup?'أنشئ حسابك ✨':'مرحباً بعودتك 👋';document.getElementById('subheading').textContent=signup?'انضم إلى Xora live وابدأ التواصل':'سجّل الدخول لمتابعة البثوث والدردشة';document.getElementById('nameField').style.display=signup?'block':'none';document.getElementById('name').required=signup;document.getElementById('submitBtn').textContent=signup?'إنشاء الحساب':'دخول إلى Xora live';document.getElementById('password').autocomplete=signup?'new-password':'current-password';document.getElementById('notice').style.display='none';}
+function togglePassword(){const p=document.getElementById('password');const b=document.querySelector('.show');p.type=p.type==='password'?'text':'password';b.textContent=p.type==='password'?'إظهار':'إخفاء';}
+function showNotice(t){const n=document.getElementById('notice');n.textContent=t;n.style.display='block';}
+</script></body></html>
